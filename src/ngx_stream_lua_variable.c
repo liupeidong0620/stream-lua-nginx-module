@@ -16,6 +16,10 @@
 
 static int ngx_stream_lua_var_get(lua_State *L);
 static int ngx_stream_lua_var_set(lua_State *L);
+
+// disable inner var define
+#if 0
+
 static int ngx_stream_lua_variable_pid(lua_State *L);
 static int ngx_stream_lua_variable_remote_addr(lua_State *L,
     ngx_stream_session_t *s);
@@ -30,6 +34,8 @@ static int ngx_stream_lua_variable_server_port(lua_State *L,
 static int ngx_stream_lua_variable_connection(lua_State *L,
     ngx_stream_session_t *s);
 static int ngx_stream_lua_variable_nginx_version(lua_State *L);
+
+#endif
 
 
 void
@@ -48,6 +54,97 @@ ngx_stream_lua_inject_variable_api(lua_State *L)
     lua_setfield(L, -2, "var");
 }
 
+/**
+ * Get nginx internal variables content
+ *
+ * @retval Always return a string or nil on Lua stack. Return nil when failed
+ * to get content, and actual content string when found the specified variable.
+ * @seealso ngx_http_lua_var_set
+ * */
+static int
+ngx_stream_lua_var_get(lua_State *L)
+{
+    ngx_stream_session_t        *s;
+    u_char                      *p, *lowcase;
+    size_t                       len;
+    ngx_uint_t                   hash;
+    ngx_str_t                    name;
+    ngx_stream_variable_value_t   *vv;
+
+#if (NGX_PCRE)
+    u_char                      *val;
+    ngx_uint_t                   n;
+    LUA_NUMBER                   index;
+    int                         *cap;
+#endif
+
+    s = ngx_stream_lua_get_session(L);
+    if (s == NULL) {
+        return luaL_error(L, "no session found");
+    }
+
+#if (NGX_PCRE)
+    if (lua_type(L, -1) == LUA_TNUMBER) {
+        /* it is a regex capturing variable */
+
+        index = lua_tonumber(L, -1);
+
+        if (index <= 0) {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        n = (ngx_uint_t) index * 2;
+
+        dd("n = %d, ncaptures = %d", (int) n, (int) s->ncaptures);
+
+        if (s->captures == NULL
+            || s->captures_data == NULL
+            || n >= s->ncaptures)
+        {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        /* n >= 0 && n < s->ncaptures */
+
+        cap = s->captures;
+
+        p = s->captures_data;
+
+        val = &p[cap[n]];
+
+        lua_pushlstring(L, (const char *) val, (size_t) (cap[n + 1] - cap[n]));
+
+        return 1;
+    }
+#endif
+
+    if (lua_type(L, -1) != LUA_TSTRING) {
+        return luaL_error(L, "bad variable name");
+    }
+
+    p = (u_char *) lua_tolstring(L, -1, &len);
+
+    lowcase = lua_newuserdata(L, len);
+
+    hash = ngx_hash_strlow(lowcase, p, len);
+
+    name.len = len;
+    name.data = lowcase;
+
+    vv = ngx_stream_get_variable(s, &name, hash);
+
+    if (vv == NULL || vv->not_found) {
+        lua_pushnil(L);
+        return 1;
+    }
+
+    lua_pushlstring(L, (const char *) vv->data, (size_t) vv->len);
+    return 1;
+}
+
+#if 0
 
 /* Get pseudo NGINX variables content
  *
@@ -132,6 +229,10 @@ ngx_stream_lua_var_get(lua_State *L)
     return 1;
 }
 
+#endif
+
+// disable inner var define
+#if 0
 
 static int
 ngx_stream_lua_variable_pid(lua_State *L)
@@ -304,6 +405,7 @@ ngx_stream_lua_variable_nginx_version(lua_State *L)
     return 1;
 }
 
+#endif
 
 /**
  * Can not set pseudo NGINX variables content
