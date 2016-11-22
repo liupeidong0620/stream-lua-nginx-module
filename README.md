@@ -11,6 +11,7 @@ Table of Contents
 
 * [Name](#name)
 * [Status](#status)
+* [Changes](#changes)
 * [Synopsis](#synopsis)
 * [Description](#description)
     * [Directives](#directives)
@@ -30,6 +31,12 @@ Status
 ======
 
 Experimental.
+
+Changes
+=======
+
+* work with nginx 1.11.5 and later
+* support all stream variables (readonly)
 
 Synopsis
 ========
