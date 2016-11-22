@@ -176,19 +176,7 @@ Many Lua API functions are ported from the `ngx_http_lua_module`. Check out the 
 
 * ngx.var.VARIABLE
 
-    Unlike the "http" subsystem, the "stream" subsystem of the NGINX core does not support NGINX
-variables at all. But still we emulate some of the NGINX builtin variables in this `ngx.var` API
-for compatibility with `ngx_http_lua_module` and ease of extracting certain session-wise information.
-Currently the following "variables" are supported:
-
-    * `ngx.var.pid` for [$pid](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_pid)
-    * `ngx.var.connection` for [$connection](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_connection)
-    * `ngx.var.remote_addr` for [$remote_addr](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_remote_addr)
-    * `ngx.var.binary_remote_addr` for [$binary_remote_addr](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_binary_remote_addr)
-    * `ngx.var.remote_port` for [$remote_port](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_remote_port)
-    * `ngx.var.nginx_version` for [$nginx_version](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_nginx_version)
-    * `ngx.var.server_addr` for [$server_addr](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_server_addr)
-    * `ngx.var.server_port` for [$server_port](http://nginx.org/en/docs/http/ngx_http_core_module.html#var_server_port)
+    Port variables from http to stream subsystem, but readonly.
 * [Core constants](https://github.com/openresty/lua-nginx-module#core-constants)
 
     `ngx.OK`, `ngx.ERROR`, and etc.
