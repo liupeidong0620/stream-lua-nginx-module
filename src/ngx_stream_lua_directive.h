@@ -36,5 +36,11 @@ char *ngx_stream_lua_init_worker_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
 char *ngx_stream_lua_init_worker_by_lua_block(ngx_conf_t *cf,
     ngx_command_t *cmd, void *conf);
 
+// port http log by lua
+// add by chrono
+char *ngx_stream_lua_log_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
+char *ngx_stream_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
 
 #endif /* _NGX_STREAM_LUA_DIRECTIVE_H_INCLUDED_ */

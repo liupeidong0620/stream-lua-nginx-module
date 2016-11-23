@@ -170,6 +170,9 @@ struct ngx_stream_lua_main_conf_s {
 
     unsigned                             requires_access:1;
     unsigned                             requires_shm:1;
+
+    // add by chrono
+    unsigned             requires_log:1;
 };
 
 
@@ -195,6 +198,9 @@ typedef struct {
 
     ngx_stream_lua_handler_pt           content_handler;
 
+    // add by chrono
+    ngx_stream_handler_pt               log_handler;
+
     u_char                             *content_chunkname;
     ngx_str_t                           content_src;    /*  content_by_lua
                                                          *  inline script/script
@@ -203,6 +209,12 @@ typedef struct {
     u_char                             *content_src_key; /* cached key for
                                                           * content_src
                                                           */
+
+    // add by chrono
+    u_char                      *log_chunkname;
+    ngx_stream_complex_value_t     log_src;     /* log_by_lua inline script/script
+                                                 file path */
+    u_char                      *log_src_key; /* cached key for log_src */
 
     ngx_flag_t                          enable_code_cache; /* whether to
                                                             * enable
