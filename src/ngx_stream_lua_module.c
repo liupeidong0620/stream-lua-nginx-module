@@ -625,6 +625,25 @@ ngx_stream_lua_init(ngx_conf_t *cf)
 
     lmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_lua_module);
 
+    // add by chrono
+    dd("requires log: %d", (int) lmcf->requires_log);
+
+    if (lmcf->requires_log) {
+        arr = &cmcf->phases[NGX_STREAM_LOG_PHASE].handlers;
+        h = ngx_array_push(arr);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        if (arr->nelts > 1) {
+            h = arr->elts;
+            ngx_memmove(&h[1], h,
+                        (arr->nelts - 1) * sizeof(ngx_stream_handler_pt));
+        }
+
+        *h = ngx_stream_lua_log_handler;
+    }
+
 #ifndef NGX_LUA_NO_FFI_API
 
     /* add the cleanup of semaphores after the lua_close */
