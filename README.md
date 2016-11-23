@@ -58,6 +58,11 @@ stream {
         content_by_lua_block {
             ngx.say("Hello, Lua!")
         }
+
+        # new directive of this fork
+        log_by_lua_block {
+            ngx.log(ngx.ERR, ngx.time())
+        }
     }
 }
 ```
