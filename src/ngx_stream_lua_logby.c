@@ -20,7 +20,7 @@
 #include "ngx_stream_lua_log.h"
 #include "ngx_stream_lua_regex.h"
 #include "ngx_stream_lua_cache.h"
-#include "ngx_stream_lua_headers.h"
+//#include "ngx_stream_lua_headers.h"
 //#include "ngx_stream_lua_variable.h"
 #include "ngx_stream_lua_string.h"
 #include "ngx_stream_lua_misc.h"
@@ -92,7 +92,7 @@ ngx_stream_lua_log_handler(ngx_stream_session_t *s)
     ctx->context = NGX_STREAM_LUA_CONTEXT_LOG;
 
     dd("calling log handler");
-    return lscf->log_handler(s);
+    return lscf->log_handler(s, ctx);
 }
 
 
@@ -111,8 +111,8 @@ ngx_stream_lua_log_handler_inline(ngx_stream_session_t *s)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_stream_lua_cache_loadbuffer(s->connection->log, L,
-                                       lscf->log_src.value.data,
-                                       lscf->log_src.value.len,
+                                       lscf->log_src.data,
+                                       lscf->log_src.len,
                                        lscf->log_src_key,
                                        (const char *) lscf->log_chunkname);
     if (rc != NGX_OK) {
@@ -134,11 +134,12 @@ ngx_stream_lua_log_handler_file(ngx_stream_session_t *s)
 
     lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
-    if (ngx_stream_complex_value(s, &lscf->log_src, &eval_src) != NGX_OK) {
-        return NGX_ERROR;
-    }
+    //if (ngx_stream_complex_value(s, &lscf->log_src, &eval_src) != NGX_OK) {
+    //    return NGX_ERROR;
+    //}
+    eval_src = lscf->log_src;
 
-    script_path = ngx_stream_lua_rebase_path(s->pool, eval_src.data,
+    script_path = ngx_stream_lua_rebase_path(s->connection->pool, eval_src.data,
                                            eval_src.len);
 
     if (script_path == NULL) {
@@ -178,7 +179,7 @@ ngx_stream_lua_log_by_chunk(lua_State *L, ngx_stream_session_t *s)
 
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
-        old_pool = ngx_stream_lua_pcre_malloc_init(s->pool);
+        old_pool = ngx_stream_lua_pcre_malloc_init(s->connection->pool);
 #endif
 
         lua_pushcfunction(L, ngx_stream_lua_traceback);

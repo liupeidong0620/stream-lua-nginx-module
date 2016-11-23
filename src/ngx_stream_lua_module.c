@@ -623,9 +623,16 @@ ngx_stream_lua_init(ngx_conf_t *cf)
     ngx_pool_cleanup_t         *cln;
 #endif
 
+    // add by chrono
+    ngx_stream_core_main_conf_t  *cmcf;
+    ngx_stream_handler_pt        *h;
+    ngx_array_t                *arr;
+
     lmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_lua_module);
 
     // add by chrono
+    cmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_core_module);
+
     dd("requires log: %d", (int) lmcf->requires_log);
 
     if (lmcf->requires_log) {

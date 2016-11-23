@@ -258,7 +258,7 @@ ngx_stream_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     u_char                      *chunkname;
     ngx_str_t                   *value;
     ngx_stream_lua_srv_conf_t   *lscf = conf;
-    ngx_stream_core_srv_conf_t  *cscf;
+    //ngx_stream_core_srv_conf_t  *cscf;
 
     // add by chrono
     ngx_stream_lua_main_conf_t    *lmcf;
