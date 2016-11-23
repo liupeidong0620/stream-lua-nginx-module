@@ -2,7 +2,9 @@
 Name
 ====
 
-ngx_stream_lua_module - Embed the power of Lua into Nginx stream/TCP Servers.
+ngx_stream_lua_module - A modification of original stream lua, work with latest nginx.
+
+Embed the power of Lua into Nginx stream/TCP Servers.
 
 *This module is not distributed with the Nginx source.* See [the installation instructions](#installation).
 
@@ -29,6 +31,8 @@ Table of Contents
 
 Status
 ======
+
+Nginx 1.11.6.
 
 Experimental.
 
