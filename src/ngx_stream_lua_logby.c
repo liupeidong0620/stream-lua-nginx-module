@@ -1,3 +1,4 @@
+// add by chrono
 
 /*
  * Copyright (C) Yichun Zhang (agentzh)
@@ -70,19 +71,19 @@ ngx_stream_lua_log_handler(ngx_stream_session_t *s)
     ngx_stream_lua_srv_conf_t     *lscf;
     ngx_stream_lua_ctx_t          *ctx;
 
-    lscf = ngx_stream_get_module_srv_conf(r, ngx_stream_lua_module);
+    lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
     if (lscf->log_handler == NULL) {
         dd("no log handler found");
         return NGX_DECLINED;
     }
 
-    ctx = ngx_stream_get_module_ctx(r, ngx_stream_lua_module);
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_lua_module);
 
     dd("ctx = %p", ctx);
 
     if (ctx == NULL) {
-        ctx = ngx_stream_lua_create_ctx(r);
+        ctx = ngx_stream_lua_create_ctx(s);
         if (ctx == NULL) {
             return NGX_ERROR;
         }
@@ -91,7 +92,7 @@ ngx_stream_lua_log_handler(ngx_stream_session_t *s)
     ctx->context = NGX_STREAM_LUA_CONTEXT_LOG;
 
     dd("calling log handler");
-    return lscf->log_handler(r);
+    return lscf->log_handler(s);
 }
 
 
@@ -104,7 +105,7 @@ ngx_stream_lua_log_handler_inline(ngx_stream_session_t *s)
 
     dd("log by lua inline");
 
-    lscf = ngx_stream_get_module_srv_conf(r, ngx_stream_lua_module);
+    lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
     L = ngx_stream_lua_get_lua_vm(s, NULL);
 
@@ -131,13 +132,13 @@ ngx_stream_lua_log_handler_file(ngx_stream_session_t *s)
     ngx_stream_lua_srv_conf_t         *lscf;
     ngx_str_t                        eval_src;
 
-    lscf = ngx_stream_get_module_srv_conf(r, ngx_stream_lua_module);
+    lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
-    if (ngx_stream_complex_value(r, &lscf->log_src, &eval_src) != NGX_OK) {
+    if (ngx_stream_complex_value(s, &lscf->log_src, &eval_src) != NGX_OK) {
         return NGX_ERROR;
     }
 
-    script_path = ngx_stream_lua_rebase_path(r->pool, eval_src.data,
+    script_path = ngx_stream_lua_rebase_path(s->pool, eval_src.data,
                                            eval_src.len);
 
     if (script_path == NULL) {
@@ -147,13 +148,13 @@ ngx_stream_lua_log_handler_file(ngx_stream_session_t *s)
     L = ngx_stream_lua_get_lua_vm(s, NULL);
 
     /*  load Lua script file (w/ cache)        sp = 1 */
-    rc = ngx_stream_lua_cache_loadfile(r->connection->log, L, script_path,
+    rc = ngx_stream_lua_cache_loadfile(s->connection->log, L, script_path,
                                      lscf->log_src_key);
     if (rc != NGX_OK) {
         return NGX_ERROR;
     }
 
-    return ngx_stream_lua_log_by_chunk(L, r);
+    return ngx_stream_lua_log_by_chunk(L, s);
 }
 
 
@@ -173,11 +174,11 @@ ngx_stream_lua_log_by_chunk(lua_State *L, ngx_stream_session_t *s)
     NGX_LUA_EXCEPTION_TRY {
 
         /* initialize nginx context in Lua VM, code chunk at stack top sp = 1 */
-        ngx_stream_lua_log_by_lua_env(L, r);
+        ngx_stream_lua_log_by_lua_env(L, s);
 
 #if (NGX_PCRE)
         /* XXX: work-around to nginx regex subsystem */
-        old_pool = ngx_stream_lua_pcre_malloc_init(r->pool);
+        old_pool = ngx_stream_lua_pcre_malloc_init(s->pool);
 #endif
 
         lua_pushcfunction(L, ngx_stream_lua_traceback);
@@ -202,7 +203,7 @@ ngx_stream_lua_log_by_chunk(lua_State *L, ngx_stream_session_t *s)
                 len = sizeof("unknown reason") - 1;
             }
 
-            ngx_log_error(NGX_LOG_ERR, r->connection->log, 0,
+            ngx_log_error(NGX_LOG_ERR, s->connection->log, 0,
                           "failed to run log_by_lua*: %*s", len, err_msg);
 
             lua_settop(L, 0);    /*  clear remaining elems on stack */

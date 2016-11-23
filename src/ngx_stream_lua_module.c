@@ -19,6 +19,9 @@
 #include "ngx_stream_lua_initworkerby.h"
 #include "ngx_stream_lua_util.h"
 
+// add by chrono
+#include "ngx_stream_lua_logby.h"
+
 
 static void *ngx_stream_lua_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_stream_lua_merge_srv_conf(ngx_conf_t *cf, void *parent,
@@ -103,6 +106,23 @@ static ngx_command_t  ngx_stream_lua_commands[] = {
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
       (void *) ngx_stream_lua_content_handler_file },
+
+    // add by chrono
+    /* log_by_lua_block { <inline script> } */
+    { ngx_string("log_by_lua_block"),
+      NGX_STREAM_SRV_CONF|NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_stream_lua_log_by_lua_block,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_log_handler_inline },
+
+    { ngx_string("log_by_lua_file"),
+      NGX_STREAM_SRV_CONF|NGX_CONF_TAKE1,
+      ngx_stream_lua_log_by_lua,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_log_handler_file },
+
 
     { ngx_string("lua_max_running_timers"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,

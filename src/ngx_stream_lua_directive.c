@@ -20,6 +20,8 @@
 #include "ngx_stream_lua_shdict.h"
 #include "ngx_stream_lua_initworkerby.h"
 
+// add by chrono
+#include "ngx_stream_lua_logby.h"
 
 static u_char *ngx_stream_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
     size_t tag_len);
