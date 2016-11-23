@@ -286,6 +286,33 @@ ngx_stream_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     if (cmd->post == ngx_stream_lua_log_handler_inline) {
         // log_by_lua_block
+        chunkname = ngx_stream_lua_gen_chunk_name(cf, "log_by_lua_block",
+                                                  sizeof("log_by_lua_block")
+                                                  - 1);
+        if (chunkname == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lscf->log_chunkname = chunkname;
+
+        dd("chunkname: %s", chunkname);
+
+        /* Don't eval nginx variables for inline lua code */
+
+        lscf->log_src = value[1];
+
+        p = ngx_palloc(cf->pool, NGX_STREAM_LUA_INLINE_KEY_LEN + 1);
+        if (p == NULL) {
+            return NGX_CONF_ERROR;
+        }
+
+        lscf->log_src_key = p;
+
+        p = ngx_copy(p, NGX_STREAM_LUA_INLINE_TAG,
+                     NGX_STREAM_LUA_INLINE_TAG_LEN);
+        p = ngx_stream_lua_digest_hex(p, value[1].data, value[1].len);
+        *p = '\0';
+
     } else {
         // log_by_lua_file
         lscf->log_src = value[1];
