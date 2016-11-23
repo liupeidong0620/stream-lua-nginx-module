@@ -329,6 +329,7 @@ ngx_stream_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
         *p = '\0';
     }
 
+    // important!
     lscf->log_handler = (ngx_stream_lua_handler_pt) cmd->post;
 
     lmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_lua_module);
