@@ -41,6 +41,7 @@ Changes
 
 * work with nginx 1.11.5 and later
 * support all stream variables (readonly)
+* log_by_lua_file and log_by_lua_block
 
 Synopsis
 ========
@@ -271,7 +272,6 @@ TODO
 ====
 
 * Add new directives `access_by_lua_block` and `access_by_lua_file`.
-* Add new directives `log_by_lua_block` and `log_by_lua_file`.
 * Add new directives `balancer_by_lua_block` and `balancer_by_lua_file`.
 * Add new directives `ssl_certificate_by_lua_block` and `ssl_certificate_by_lua_file`.
 * Add `ngx.semaphore` API.
