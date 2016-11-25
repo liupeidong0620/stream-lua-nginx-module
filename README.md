@@ -40,7 +40,7 @@ Changes
 =======
 
 * work with nginx 1.11.5 and later
-* support all stream variables (readonly)
+* support all stream variables (read/write)
 * log_by_lua_file and log_by_lua_block
 
 Synopsis
@@ -58,6 +58,7 @@ stream {
 
         content_by_lua_block {
             ngx.say("Hello, Lua!")
+            ngx.say("now is : ", ngx.var.time_local)    -- var
         }
 
         # new directive of this fork
