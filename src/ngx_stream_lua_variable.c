@@ -18,7 +18,7 @@ static int ngx_stream_lua_var_get(lua_State *L);
 static int ngx_stream_lua_var_set(lua_State *L);
 
 // disable inner var define
-#if 0
+#if nginx_version < 1011002
 
 static int ngx_stream_lua_variable_pid(lua_State *L);
 static int ngx_stream_lua_variable_remote_addr(lua_State *L,
@@ -54,12 +54,14 @@ ngx_stream_lua_inject_variable_api(lua_State *L)
     lua_setfield(L, -2, "var");
 }
 
+#if nginx_version > 1011002
+
 /**
  * Get nginx internal variables content
  *
  * @retval Always return a string or nil on Lua stack. Return nil when failed
  * to get content, and actual content string when found the specified variable.
- * @seealso ngx_http_lua_var_set
+ * @seealso ngx_stream_lua_var_set
  * */
 static int
 ngx_stream_lua_var_get(lua_State *L)
@@ -144,7 +146,161 @@ ngx_stream_lua_var_get(lua_State *L)
     return 1;
 }
 
-#if 0
+/**
+ * Set nginx internal variable content
+ *
+ * @retval Always return a boolean on Lua stack. Return true when variable
+ * content was modified successfully, false otherwise.
+ * @seealso ngx_stream_lua_var_get
+ * */
+static int
+ngx_stream_lua_var_set(lua_State *L)
+{
+    ngx_stream_variable_t         *v;
+    ngx_stream_variable_value_t   *vv;
+    ngx_stream_core_main_conf_t   *cmcf;
+    u_char                      *p, *lowcase, *val;
+    size_t                       len;
+    ngx_str_t                    name;
+    ngx_uint_t                   hash;
+    ngx_stream_session_t          *s;
+    int                          value_type;
+    const char                  *msg;
+
+    s = ngx_stream_lua_get_session(L);
+    if (s == NULL) {
+        return luaL_error(L, "no session object found");
+    }
+
+    /* we skip the first argument that is the table */
+
+    /* we read the variable name */
+
+    if (lua_type(L, 2) != LUA_TSTRING) {
+        return luaL_error(L, "bad variable name");
+    }
+
+    p = (u_char *) lua_tolstring(L, 2, &len);
+
+    lowcase = lua_newuserdata(L, len + 1);
+
+    hash = ngx_hash_strlow(lowcase, p, len);
+    lowcase[len] = '\0';
+
+    name.len = len;
+    name.data = lowcase;
+
+    /* we read the variable new value */
+
+    value_type = lua_type(L, 3);
+    switch (value_type) {
+    case LUA_TNUMBER:
+    case LUA_TSTRING:
+        p = (u_char *) luaL_checklstring(L, 3, &len);
+
+        val = ngx_palloc(s->connection->pool, len);
+        if (val == NULL) {
+            return luaL_error(L, "memory allocation error");
+        }
+
+        ngx_memcpy(val, p, len);
+
+        break;
+
+    case LUA_TNIL:
+        /* undef the variable */
+
+        val = NULL;
+        len = 0;
+
+        break;
+
+    default:
+        msg = lua_pushfstring(L, "string, number, or nil expected, "
+                              "but got %s", lua_typename(L, value_type));
+        return luaL_argerror(L, 1, msg);
+    }
+
+    /* we fetch the variable itself */
+
+    cmcf = ngx_stream_get_module_main_conf(s, ngx_stream_core_module);
+
+    v = ngx_hash_find(&cmcf->variables_hash, hash, name.data, name.len);
+
+    if (v) {
+        if (!(v->flags & NGX_STREAM_VAR_CHANGEABLE)) {
+            return luaL_error(L, "variable \"%s\" not changeable", lowcase);
+        }
+
+        if (v->set_handler) {
+
+            dd("set variables with set_handler");
+
+            vv = ngx_palloc(s->connection->pool, sizeof(ngx_stream_variable_value_t));
+            if (vv == NULL) {
+                return luaL_error(L, "no memory");
+            }
+
+            if (value_type == LUA_TNIL) {
+                vv->valid = 0;
+                vv->not_found = 1;
+                vv->no_cacheable = 0;
+                vv->data = NULL;
+                vv->len = 0;
+
+            } else {
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = val;
+                vv->len = len;
+            }
+
+            v->set_handler(s, vv, v->data);
+
+            return 0;
+        }
+
+        if (v->flags & NGX_STREAM_VAR_INDEXED) {
+            vv = &s->variables[v->index];
+
+            dd("set indexed variable");
+
+            if (value_type == LUA_TNIL) {
+                vv->valid = 0;
+                vv->not_found = 1;
+                vv->no_cacheable = 0;
+
+                vv->data = NULL;
+                vv->len = 0;
+
+            } else {
+                vv->valid = 1;
+                vv->not_found = 0;
+                vv->no_cacheable = 0;
+
+                vv->data = val;
+                vv->len = len;
+            }
+
+            return 0;
+        }
+
+        return luaL_error(L, "variable \"%s\" cannot be assigned a value",
+                          lowcase);
+    }
+
+    /* variable not found */
+
+    return luaL_error(L, "variable \"%s\" not found for writing; "
+                      "maybe it is a built-in variable that is not changeable "
+                      "or you forgot to use \"set $%s '';\" "
+                      "in the config file to define it first",
+                      lowcase, lowcase);
+}
+
+#else   // nginx_version < 1011002
 
 /* Get pseudo NGINX variables content
  *
@@ -229,10 +385,6 @@ ngx_stream_lua_var_get(lua_State *L)
     return 1;
 }
 
-#endif
-
-// disable inner var define
-#if 0
 
 static int
 ngx_stream_lua_variable_pid(lua_State *L)
@@ -405,8 +557,6 @@ ngx_stream_lua_variable_nginx_version(lua_State *L)
     return 1;
 }
 
-#endif
-
 /**
  * Can not set pseudo NGINX variables content
  * */
@@ -415,3 +565,6 @@ ngx_stream_lua_var_set(lua_State *L)
 {
     return luaL_error(L, "can not set variable");
 }
+
+#endif
+
