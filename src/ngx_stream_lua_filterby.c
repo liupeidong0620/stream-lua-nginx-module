@@ -161,14 +161,14 @@ ngx_stream_lua_filter_inline(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_
     ngx_int_t                    rc;
     ngx_stream_lua_srv_conf_t     *lscf;
 
-    lscf = ngx_http_get_module_srv_conf(s, ngx_stream_lua_module);
+    lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
     L = ngx_stream_lua_get_lua_vm(s, NULL);
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_stream_lua_cache_loadbuffer(s->connection->log, L,
-                                       lscf->filter_src.value.data,
-                                       lscf->filter_src.value.len,
+                                       lscf->filter_src.data,
+                                       lscf->filter_src.len,
                                        lscf->filter_src_key,
                                        "=filter_by_lua");
     if (rc != NGX_OK) {
@@ -196,7 +196,7 @@ ngx_stream_lua_filter_file(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_t 
     ngx_stream_lua_srv_conf_t         *lscf;
     ngx_str_t                        eval_src;
 
-    lscf = ngx_http_get_module_srv_conf(s, ngx_stream_lua_module);
+    lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
     /* Eval nginx variables in code path string first */
     //if (ngx_http_complex_value(r, &lscf->body_filter_src, &eval_src)
@@ -243,7 +243,7 @@ ngx_stream_lua_filter(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_t from_
     ngx_int_t                    rc;
     uint16_t                     old_context;
     ngx_stream_lua_cleanup_t          *cln;
-    lua_State                   *L;
+    //lua_State                   *L;
     //ngx_chain_t                 *out;
 
     //ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0,
@@ -291,7 +291,7 @@ ngx_stream_lua_filter(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_t from_
 
         cln->handler = ngx_stream_lua_session_cleanup_handler;
         cln->data = ctx;
-        ctx->cleanup = &cln->handler;
+        ctx->cleanup = cln;
     }
 
     old_context = ctx->context;
