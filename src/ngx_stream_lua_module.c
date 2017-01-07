@@ -21,6 +21,7 @@
 
 // add by chrono
 #include "ngx_stream_lua_logby.h"
+#include "ngx_stream_lua_filterby.h"
 
 
 static void *ngx_stream_lua_create_srv_conf(ngx_conf_t *cf);
@@ -107,6 +108,7 @@ static ngx_command_t  ngx_stream_lua_commands[] = {
       0,
       (void *) ngx_stream_lua_content_handler_file },
 
+#if 1
     // add by chrono
     /* log_by_lua_block { <inline script> } */
     { ngx_string("log_by_lua_block"),
@@ -123,6 +125,24 @@ static ngx_command_t  ngx_stream_lua_commands[] = {
       0,
       (void *) ngx_stream_lua_log_handler_file },
 
+    // add by chrono
+    /* filter_by_lua_block { <inline script> } */
+    { ngx_string("filter_by_lua_block"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+                        |NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_stream_lua_filter_by_lua_block,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_filter_inline },
+
+    { ngx_string("filter_by_lua_file"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_stream_lua_filter_by_lua,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_filter_file },
+#endif
 
     { ngx_string("lua_max_running_timers"),
       NGX_STREAM_MAIN_CONF|NGX_CONF_TAKE1,
@@ -623,13 +643,17 @@ ngx_stream_lua_init(ngx_conf_t *cf)
     ngx_pool_cleanup_t         *cln;
 #endif
 
+#if 1
     // add by chrono
     ngx_stream_core_main_conf_t  *cmcf;
     ngx_stream_handler_pt        *h;
     ngx_array_t                *arr;
 
+#endif
+
     lmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_lua_module);
 
+#if 1
     // add by chrono
     cmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_core_module);
 
@@ -650,6 +674,15 @@ ngx_stream_lua_init(ngx_conf_t *cf)
 
         *h = ngx_stream_lua_log_handler;
     }
+
+    if (lmcf->requires_filter) {
+        rc = ngx_stream_lua_filter_init();
+        if (rc != NGX_OK) {
+            return rc;
+        }
+    }
+
+#endif
 
 #ifndef NGX_LUA_NO_FFI_API
 
