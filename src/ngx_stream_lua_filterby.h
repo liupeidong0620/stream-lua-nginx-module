@@ -11,8 +11,8 @@
 
 #include "ngx_stream_lua_common.h"
 
-// nouse ?
-extern ngx_stream_filter_pt ngx_stream_lua_next_filter;
+// nouse, for capture
+//extern ngx_stream_filter_pt ngx_stream_lua_next_filter;
 
 
 ngx_int_t ngx_stream_lua_filter_init(void);
