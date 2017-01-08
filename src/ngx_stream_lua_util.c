@@ -37,6 +37,10 @@
 #include "ngx_stream_lua_coroutine.h"
 #include <ngx_md5.h>
 
+// add by chrono
+#if 1
+#include "ngx_stream_lua_filterby.h"
+#endif
 
 static ngx_int_t ngx_stream_lua_flush_pending_output(ngx_stream_session_t *s,
     ngx_stream_lua_ctx_t *ctx);
@@ -76,6 +80,12 @@ static ngx_int_t ngx_stream_lua_process_flushing_coroutines(
     ngx_stream_session_t *s, ngx_stream_lua_ctx_t *ctx);
 static void ngx_stream_lua_inject_req_api(ngx_log_t *log, lua_State *L);
 
+// add by chrono
+#if 1
+static void ngx_stream_lua_inject_arg_api(lua_State *L);
+static int ngx_stream_lua_param_get(lua_State *L);
+static int ngx_stream_lua_param_set(lua_State *L);
+#endif
 
 enum {
     NGX_STREAM_LUA_LINGERING_BUFFER_SIZE = 4096,
@@ -2397,6 +2407,77 @@ ngx_stream_lua_thread_traceback(lua_State *L, lua_State *co,
     return 1;
 }
 
+// add by chrono
+#if 1
+
+static void
+ngx_stream_lua_inject_arg_api(lua_State *L)
+{
+    lua_pushliteral(L, "arg");
+    lua_newtable(L);    /*  .arg table aka {} */
+
+    lua_createtable(L, 0 /* narr */, 2 /* nrec */);    /*  the metatable */
+
+    lua_pushcfunction(L, ngx_stream_lua_param_get);
+    lua_setfield(L, -2, "__index");
+
+    lua_pushcfunction(L, ngx_stream_lua_param_set);
+    lua_setfield(L, -2, "__newindex");
+
+    lua_setmetatable(L, -2);    /*  tie the metatable to param table */
+
+    dd("top: %d, type -1: %s", lua_gettop(L), luaL_typename(L, -1));
+
+    lua_rawset(L, -3);    /*  set ngx.arg table */
+}
+
+
+static int
+ngx_stream_lua_param_get(lua_State *L)
+{
+    ngx_stream_lua_ctx_t          *ctx;
+    ngx_stream_session_t          *s;
+
+    s = ngx_stream_lua_get_session(L);
+    if (s == NULL) {
+        return 0;
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "ctx not found");
+    }
+
+    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_FILTER);
+
+    /* ctx->context & (NGX_HTTP_LUA_CONTEXT_BODY_FILTER) */
+
+    return ngx_stream_lua_filter_param_get(L);
+}
+
+
+static int
+ngx_stream_lua_param_set(lua_State *L)
+{
+    ngx_stream_lua_ctx_t          *ctx;
+    ngx_stream_session_t          *s;
+
+    s = ngx_stream_lua_get_session(L);
+    if (s == NULL) {
+        return 0;
+    }
+
+    ctx = ngx_stream_get_module_ctx(s, ngx_stream_lua_module);
+    if (ctx == NULL) {
+        return luaL_error(L, "ctx not found");
+    }
+
+    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_FILTER);
+
+    return ngx_stream_lua_filter_param_set(L, s, ctx);
+}
+
+#endif
 
 ngx_stream_lua_co_ctx_t *
 ngx_stream_lua_get_co_ctx(lua_State *L, ngx_stream_lua_ctx_t *ctx)
@@ -2660,6 +2741,11 @@ ngx_stream_lua_inject_ngx_api(lua_State *L, ngx_stream_lua_main_conf_t *lmcf,
 
     lua_pushcfunction(L, ngx_stream_lua_get_raw_phase_context);
     lua_setfield(L, -2, "_phase_ctx");
+
+// add by chrono
+#if 1
+    ngx_stream_lua_inject_arg_api(L);
+#endif
 
     ngx_stream_lua_inject_core_consts(L);
 
