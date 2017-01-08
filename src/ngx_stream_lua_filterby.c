@@ -36,6 +36,7 @@ static ngx_stream_filter_pt ngx_stream_next_filter;
 /* key for the ngx_chain_t *in pointer in the Lua thread */
 #define ngx_stream_lua_chain_key  "__ngx_cl"
 
+// add by chrono
 // key for from_upstream
 #define ngx_stream_lua_from_upstream_key "__ngx_from_upstream"
 
@@ -60,9 +61,12 @@ ngx_stream_lua_filter_by_lua_env(lua_State *L, ngx_stream_session_t *s,
     //lua_pushlightuserdata(L, in);
     //lua_setglobal(L, ngx_stream_lua_chain_key);
 
+#if 1
     // set ngx_stream_lua_from_upstream_key => from_upstream
     lua_pushboolean(L, from_upstream);
     lua_setglobal(L, ngx_stream_lua_from_upstream_key);
+#endif
+
     /**
      * we want to create empty environment for current script
      *
@@ -177,7 +181,7 @@ ngx_stream_lua_filter_inline(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_
 
     rc = ngx_stream_lua_filter_by_chunk(L, s, in, from_upstream);
 
-    dd("body filter by chunk returns %d", (int) rc);
+    dd("stream filter by chunk returns %d", (int) rc);
 
     if (rc != NGX_OK) {
         return NGX_ERROR;
@@ -297,10 +301,10 @@ ngx_stream_lua_filter(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_t from_
     old_context = ctx->context;
     ctx->context = NGX_STREAM_LUA_CONTEXT_FILTER;
 
-    dd("calling body filter handler");
+    dd("calling stream filter handler");
     rc = lscf->filter_handler(s, in, from_upstream);
 
-    dd("calling body filter handler returned %d", (int) rc);
+    dd("calling stream filter handler returned %d", (int) rc);
 
     ctx->context = old_context;
 
@@ -349,7 +353,7 @@ ngx_stream_lua_filter(ngx_stream_session_t *s, ngx_chain_t *in, ngx_uint_t from_
 ngx_int_t
 ngx_stream_lua_filter_init(void)
 {
-    dd("calling body filter init");
+    dd("calling stream filter init");
     ngx_stream_next_filter = ngx_stream_top_filter;
     ngx_stream_top_filter = ngx_stream_lua_filter;
 
@@ -375,6 +379,7 @@ ngx_stream_lua_filter_param_get(lua_State *L)
 
     lua_getglobal(L, ngx_stream_lua_from_upstream_key);
 
+    // now only arg[1] = from_upstream
     from_upstream = lua_toboolean(L, -1);
     lua_pushboolean(L, from_upstream);
 
