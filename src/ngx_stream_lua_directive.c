@@ -21,8 +21,10 @@
 #include "ngx_stream_lua_initworkerby.h"
 
 // add by chrono
+#if 1
 #include "ngx_stream_lua_logby.h"
 #include "ngx_stream_lua_filterby.h"
+#endif
 
 static u_char *ngx_stream_lua_gen_chunk_name(ngx_conf_t *cf, const char *tag,
     size_t tag_len);
@@ -285,7 +287,7 @@ ngx_stream_lua_log_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     if (value[1].len == 0) {
         /*  Oops...Invalid location conf */
         ngx_conf_log_error(NGX_LOG_ERR, cf, 0,
-                           "invalid location config: no runnable Lua code");
+                           "invalid server config: no runnable Lua code");
         return NGX_CONF_ERROR;
     }
 

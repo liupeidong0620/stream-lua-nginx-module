@@ -2431,7 +2431,6 @@ ngx_stream_lua_inject_arg_api(lua_State *L)
     lua_rawset(L, -3);    /*  set ngx.arg table */
 }
 
-
 static int
 ngx_stream_lua_param_get(lua_State *L)
 {
@@ -2450,11 +2449,10 @@ ngx_stream_lua_param_get(lua_State *L)
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_FILTER);
 
-    /* ctx->context & (NGX_HTTP_LUA_CONTEXT_BODY_FILTER) */
+    /* ctx->context & (NGX_STREAM_LUA_CONTEXT_FILTER) */
 
     return ngx_stream_lua_filter_param_get(L);
 }
-
 
 static int
 ngx_stream_lua_param_set(lua_State *L)
