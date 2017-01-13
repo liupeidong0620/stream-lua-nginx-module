@@ -32,7 +32,7 @@ Table of Contents
 Status
 ======
 
-Nginx 1.11.6.
+Nginx 1.11.8.
 
 Experimental.
 
@@ -58,7 +58,9 @@ stream {
 
         content_by_lua_block {
             ngx.say("Hello, Lua!")
-            ngx.say("now is : ", ngx.var.time_local)    -- var
+
+            -- we can use variables in stream subsystem
+            ngx.say("now is : ", ngx.var.time_local)
         }
 
         # new directive of this fork
@@ -165,14 +167,14 @@ In addition, `ngx_stream_lua_module` provides the following directives:
     Just an equivalent to the [resolver_timeout](http://nginx.org/r/resolver_timeout) directive in the NGINX "http" subsystem.
 * `lua_lingering_close`
 
-    Just an equivalent to the [lingering_close](http://nginx.org/r/lingering_close) directive in the NGINX "http" subsystem.
+    Just an equivalent to the [lingering_close](http://nginx.org/r/lingering_close] directive in the NGINX "http" subsystem.
 * `lua_lingering_time`
 
-    Just an equivalent to the [lingering_time](http://nginx.org/r/lingering_time) directive in the NGINX "http" subsystem.
+    Just an equivalent to the [lingering_time](http://nginx.org/r/lingering_time] directive in the NGINX "http" subsystem.
 
 * `lua_lingering_timeout`
 
-    Just an equivalent to the [lingering_timeout](http://nginx.org/r/lingering_timeout) directive in the NGINX "http" subsystem.
+    Just an equivalent to the [lingering_timeout](http://nginx.org/r/lingering_timeout] directive in the NGINX "http" subsystem.
 
 The [send_timeout](http://nginx.org/r/send_timeout) directive in the NGINX "http" subsystem is missing in the "stream" subsystem.
 So `ngx_stream_lua_module` uses the `lua_socket_send_timeout` for this purpose.
@@ -373,7 +375,7 @@ Copyright and License
 
 This module is licensed under the BSD license.
 
-Copyright (C) 2009-2017, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, OpenResty Inc.
+Copyright (C) 2009-2016, by Yichun "agentzh" Zhang (章亦春) <agentzh@gmail.com>, CloudFlare Inc.
 
 Copyright (C) 2009-2016, by Xiaozhe Wang (chaoslawful) <chaoslawful@gmail.com>.
 
