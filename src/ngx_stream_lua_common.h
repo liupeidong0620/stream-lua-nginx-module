@@ -62,6 +62,11 @@
 #define NGX_STREAM_LUA_CONTEXT_TIMER          0x004
 #define NGX_STREAM_LUA_CONTEXT_INIT_WORKER    0x008
 
+// add by chrono
+#if 1
+#define NGX_STREAM_LUA_CONTEXT_FILTER         0x010
+#endif
+
 
 /* Nginx Stream Lua Inline tag prefix */
 
@@ -171,8 +176,11 @@ struct ngx_stream_lua_main_conf_s {
     unsigned                             requires_access:1;
     unsigned                             requires_shm:1;
 
+#if 1
     // add by chrono
-    unsigned             requires_log:1;
+    unsigned                            requires_log:1;
+    unsigned                            requires_filter:1;
+#endif
 };
 
 
@@ -198,8 +206,11 @@ typedef struct {
 
     ngx_stream_lua_handler_pt           content_handler;
 
+#if 1
     // add by chrono
     ngx_stream_lua_handler_pt           log_handler;
+    ngx_stream_filter_pt                filter_handler;
+#endif
 
     u_char                             *content_chunkname;
     ngx_str_t                           content_src;    /*  content_by_lua
@@ -210,15 +221,20 @@ typedef struct {
                                                           * content_src
                                                           */
 
+#if 1
     // add by chrono
-    u_char                      *log_chunkname;
-    ngx_str_t     log_src;     /* log_by_lua inline script/script
+    u_char                             *log_chunkname;
+    ngx_str_t                           log_src;     /* log_by_lua inline script/script
                                                  file path */
-    u_char                      *log_src_key; /* cached key for log_src */
+    u_char                             *log_src_key; /* cached key for log_src */
 
     ngx_flag_t                          enable_code_cache; /* whether to
                                                             * enable
                                                             * code cache */
+    // add by chrono
+    ngx_str_t                           filter_src;
+    u_char                             *filter_src_key;
+#endif
 
     ngx_flag_t                          check_client_abort;
 
