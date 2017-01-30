@@ -163,6 +163,11 @@ struct ngx_stream_lua_main_conf_s {
     ngx_array_t                         *preload_hooks;
                                         /* of ngx_stream_lua_preload_hook_t */
 
+#if 1
+    // add by chrono
+    ngx_flag_t           postponed_to_access_phase_end;
+#endif
+
     ngx_stream_lua_main_conf_handler_pt  init_handler;
     ngx_str_t                            init_src;
 
@@ -208,6 +213,7 @@ typedef struct {
 
 #if 1
     // add by chrono
+    ngx_stream_lua_handler_pt     access_handler;
     ngx_stream_lua_handler_pt           log_handler;
     ngx_stream_filter_pt                filter_handler;
 #endif
