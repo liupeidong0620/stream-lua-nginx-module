@@ -32,7 +32,7 @@ Table of Contents
 Status
 ======
 
-Nginx 1.11.8.
+Nginx 1.11.9.
 
 Experimental.
 
@@ -42,6 +42,7 @@ Changes
 * work with nginx 1.11.5 and later
 * support all stream variables (read/write)
 * log_by_lua_file and log_by_lua_block
+* filter_by_lua_file and filter_by_lua_block
 
 Synopsis
 ========
@@ -61,6 +62,14 @@ stream {
 
             -- we can use variables in stream subsystem
             ngx.say("now is : ", ngx.var.time_local)
+        }
+
+        # new directive of this fork
+        filter_by_lua_block {
+            -- in this filter we can not modify any data
+            -- check upstream flag with ngx.arg[1]
+
+            ngx.log("upstream flag is : ", ngx.arg[1])
         }
 
         # new directive of this fork
