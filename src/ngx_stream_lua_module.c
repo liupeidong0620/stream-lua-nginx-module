@@ -19,9 +19,12 @@
 #include "ngx_stream_lua_initworkerby.h"
 #include "ngx_stream_lua_util.h"
 
+#if 1
 // add by chrono
 #include "ngx_stream_lua_logby.h"
 #include "ngx_stream_lua_filterby.h"
+#include "ngx_stream_lua_accessby.h"
+#endif
 
 
 static void *ngx_stream_lua_create_srv_conf(ngx_conf_t *cf);
@@ -142,6 +145,24 @@ static ngx_command_t  ngx_stream_lua_commands[] = {
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
       (void *) ngx_stream_lua_filter_file },
+
+    // add by chrono
+    /* access_by_lua_block { <inline script> } */
+    { ngx_string("access_by_lua_block"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+                        |NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_stream_lua_access_by_lua_block,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_access_handler_inline },
+
+    { ngx_string("access_by_lua_file"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_stream_lua_access_by_lua,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_access_handler_file },
 #endif
 
     { ngx_string("lua_max_running_timers"),
@@ -656,6 +677,15 @@ ngx_stream_lua_init(ngx_conf_t *cf)
 #if 1
     // add by chrono
     cmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_core_module);
+
+    if (lmcf->requires_access) {
+        h = ngx_array_push(&cmcf->phases[NGX_STREAM_ACCESS_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_stream_lua_access_handler;
+    }
 
     dd("requires log: %d", (int) lmcf->requires_log);
 

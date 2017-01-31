@@ -54,7 +54,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         last_ph = &ph[cur_ph->next - 1];
 
         dd("ph cur: %d, ph next: %d", (int) s->phase_handler,
-           (int) (cur_ph->next - 2));
+           (int) (cur_ph->next - 1));
 
 #if 0
         if (cur_ph == last_ph) {
