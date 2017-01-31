@@ -50,6 +50,8 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         ph = cmcf->phase_engine.handlers;
         cur_ph = &ph[s->phase_handler];
 
+        // in stream subsystem there is no post_access
+        // so here we just use 'next - 1'
         /* we should skip the post_access phase handler here too */
         last_ph = &ph[cur_ph->next - 1];
 
