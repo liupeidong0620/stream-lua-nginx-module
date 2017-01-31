@@ -107,6 +107,7 @@ ngx_stream_lua_sleep_handler(ngx_event_t *ev)
 
     //(void) ngx_stream_lua_sleep_resume(s, ctx);
 
+    // add by chrono
     if (ctx->entered_content_phase) {
         (void) ngx_stream_lua_sleep_resume(s, ctx);
 
