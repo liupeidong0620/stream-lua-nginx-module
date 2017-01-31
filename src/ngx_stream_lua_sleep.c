@@ -105,7 +105,15 @@ ngx_stream_lua_sleep_handler(ngx_event_t *ev)
 
     ctx->cur_co_ctx = coctx;
 
-    (void) ngx_stream_lua_sleep_resume(s, ctx);
+    //(void) ngx_stream_lua_sleep_resume(s, ctx);
+
+    if (ctx->entered_content_phase) {
+        (void) ngx_stream_lua_sleep_resume(s, ctx);
+
+    } else {
+        ctx->resume_handler = ngx_stream_lua_sleep_resume;
+        ngx_stream_core_run_phases(s);
+    }
 }
 
 
