@@ -45,7 +45,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
 
         lmcf->postponed_to_access_phase_end = 1;
 
-        cmcf = ngx_stream_get_module_main_conf(r, ngx_stream_core_module);
+        cmcf = ngx_stream_get_module_main_conf(s, ngx_stream_core_module);
 
         ph = cmcf->phase_engine.handlers;
         cur_ph = &ph[s->phase_handler];
@@ -53,7 +53,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         /* we should skip the post_access phase handler here too */
         last_ph = &ph[cur_ph->next - 1];
 
-        dd("ph cur: %d, ph next: %d", (int) r->phase_handler,
+        dd("ph cur: %d, ph next: %d", (int) s->phase_handler,
            (int) (cur_ph->next - 2));
 
 #if 0
@@ -100,7 +100,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
 
     if (ctx->entered_access_phase) {
         dd("calling wev handler");
-        rc = ctx->resume_handler(s);
+        rc = ctx->resume_handler(s, ctx);
         dd("wev handler returns %d", (int) rc);
 
         if (rc == NGX_ERROR || rc == NGX_DONE || rc > NGX_OK) {
@@ -134,12 +134,12 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         return NGX_DECLINED;
     }
 
+#if 0
     if (ctx->waiting_more_body) {
         dd("WAITING MORE BODY");
         return NGX_DONE;
     }
 
-#if 0
     if (lscf->force_read_body && !ctx->read_body_done) {
         r->request_body_in_single_buf = 1;
         r->request_body_in_persistent_file = 1;
@@ -165,7 +165,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
 #endif
 
     dd("calling access handler");
-    return lscf->access_handler(r);
+    return lscf->access_handler(s, ctx);
 }
 
 
@@ -248,7 +248,7 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
     ngx_event_t         *rev;
     ngx_connection_t    *c;
     ngx_stream_lua_ctx_t  *ctx;
-    ngx_stream_cleanup_t  *cln;
+    ngx_stream_lua_cleanup_t  *cln;
 
     ngx_stream_lua_srv_conf_t     *lscf;
 
@@ -297,7 +297,7 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
 
     /*  {{{ register request cleanup hooks */
     if (ctx->cleanup == NULL) {
-        cln = ngx_stream_cleanup_add(s, 0);
+        cln = ngx_stream_lua_cleanup_add(s, 0);
         if (cln == NULL) {
             return NGX_STREAM_INTERNAL_SERVER_ERROR;
         }
