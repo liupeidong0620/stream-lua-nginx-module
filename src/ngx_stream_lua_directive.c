@@ -530,6 +530,7 @@ ngx_stream_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
     } else {
 
         lscf->access_src = value[1];
+
         /* no variable found */
         p = ngx_palloc(cf->pool, NGX_STREAM_LUA_FILE_KEY_LEN + 1);
         if (p == NULL) {
