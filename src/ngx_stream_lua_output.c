@@ -66,7 +66,8 @@ ngx_stream_lua_ngx_echo(lua_State *L, unsigned newline)
         return luaL_error(L, "no session ctx found");
     }
 
-    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT);
+    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                         | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
 #if 0
     if (ctx->acquired_raw_req_socket) {
