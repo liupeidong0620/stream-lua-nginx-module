@@ -394,7 +394,8 @@ ngx_stream_lua_socket_tcp(lua_State *L)
     }
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
-                                 | NGX_STREAM_LUA_CONTEXT_TIMER);
+                                 | NGX_STREAM_LUA_CONTEXT_TIMER
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_stream_lua_tcp_socket_metatable_key);
@@ -448,7 +449,8 @@ ngx_stream_lua_socket_tcp_connect(lua_State *L)
     }
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
-                                 | NGX_STREAM_LUA_CONTEXT_TIMER);
+                                 | NGX_STREAM_LUA_CONTEXT_TIMER
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -3952,7 +3954,8 @@ ngx_stream_lua_req_socket(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT);
+    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                        | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     c = s->connection;
 
