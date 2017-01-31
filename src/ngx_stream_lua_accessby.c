@@ -178,8 +178,8 @@ ngx_stream_lua_access_handler_inline(ngx_stream_session_t *s)
 
     /*  load Lua inline script (w/ cache) sp = 1 */
     rc = ngx_stream_lua_cache_loadbuffer(s->connection->log, L,
-                                       lscf->access_src.value.data,
-                                       lscf->access_src.value.len,
+                                       lscf->access_src.data,
+                                       lscf->access_src.len,
                                        lscf->access_src_key,
                                        (const char *) lscf->access_chunkname);
 
@@ -203,9 +203,10 @@ ngx_stream_lua_access_handler_file(ngx_stream_session_t *s)
     lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
     /* Eval nginx variables in code path string first */
-    if (ngx_stream_complex_value(s, &lscf->access_src, &eval_src) != NGX_OK) {
-        return NGX_ERROR;
-    }
+    //if (ngx_stream_complex_value(s, &lscf->access_src, &eval_src) != NGX_OK) {
+    //    return NGX_ERROR;
+    //}
+    eval_src = lscf->access_src;
 
     script_path = ngx_stream_lua_rebase_path(s->connection->pool, eval_src.data,
                                            eval_src.len);
@@ -297,9 +298,9 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
             return NGX_STREAM_INTERNAL_SERVER_ERROR;
         }
 
-        cln->handler = ngx_stream_lua_request_cleanup_handler;
+        cln->handler = ngx_stream_lua_session_cleanup_handler;
         cln->data = ctx;
-        ctx->cleanup = &cln->handler;
+        ctx->cleanup = cln;
     }
     /*  }}} */
 
@@ -308,11 +309,7 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
     lscf = ngx_stream_get_module_srv_conf(s, ngx_stream_lua_module);
 
     if (lscf->check_client_abort) {
-        r->read_event_handler = ngx_stream_lua_rd_check_broken_connection;
-
-#if (NGX_STREAM_V2)
-        if (!s->stream) {
-#endif
+        ctx->read_event_handler = ngx_stream_lua_rd_check_broken_connection;
 
         rev = s->connection->read;
 
@@ -322,12 +319,8 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
             }
         }
 
-#if (NGX_STREAM_V2)
-        }
-#endif
-
     } else {
-        s->read_event_handler = ngx_stream_block_reading;
+        ctx->read_event_handler = ngx_stream_lua_block_reading;
     }
 
     rc = ngx_stream_lua_run_thread(L, s, ctx, 0);
@@ -352,7 +345,7 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
         }
 
     } else if (rc == NGX_DONE) {
-        ngx_stream_lua_finalize_request(s, NGX_DONE);
+        ngx_stream_lua_finalize_session(s, NGX_DONE);
 
         rc = ngx_stream_lua_run_posted_threads(c, L, s, ctx);
 
@@ -367,26 +360,6 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
 
 #if 1
     if (rc == NGX_OK) {
-        if (r->header_sent) {
-            dd("header already sent");
-
-            /* response header was already generated in access_by_lua*,
-             * so it is no longer safe to proceed to later phases
-             * which may generate responses again */
-
-            if (!ctx->eof) {
-                dd("eof not yet sent");
-
-                rc = ngx_stream_lua_send_chain_link(r, ctx, NULL
-                                                  /* indicate last_buf */);
-                if (rc == NGX_ERROR || rc > NGX_OK) {
-                    return rc;
-                }
-            }
-
-            return NGX_STREAM_OK;
-        }
-
         return NGX_OK;
     }
 #endif
