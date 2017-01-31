@@ -18,6 +18,8 @@
 #include "ngx_stream_lua_exception.h"
 #include "ngx_stream_lua_cache.h"
 
+// add by chrono
+#define NGX_STREAM_SPECIAL_RESPONSE 300
 
 static ngx_int_t ngx_stream_lua_access_by_chunk(lua_State *L,
     ngx_stream_session_t *s);
@@ -46,10 +48,10 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         cmcf = ngx_stream_get_module_main_conf(r, ngx_stream_core_module);
 
         ph = cmcf->phase_engine.handlers;
-        cur_ph = &ph[r->phase_handler];
+        cur_ph = &ph[s->phase_handler];
 
         /* we should skip the post_access phase handler here too */
-        last_ph = &ph[cur_ph->next - 2];
+        last_ph = &ph[cur_ph->next - 1];
 
         dd("ph cur: %d, ph next: %d", (int) r->phase_handler,
            (int) (cur_ph->next - 2));
@@ -70,7 +72,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
 
             *last_ph = tmp;
 
-            r->phase_handler--; /* redo the current ph */
+            s->phase_handler--; /* redo the current ph */
 
             return NGX_DECLINED;
         }
@@ -106,25 +108,25 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         }
 
         if (rc == NGX_OK) {
-            if (r->header_sent) {
-                dd("header already sent");
+            //if (r->header_sent) {
+            //    dd("header already sent");
 
-                /* response header was already generated in access_by_lua*,
-                 * so it is no longer safe to proceed to later phases
-                 * which may generate responses again */
+            //    /* response header was already generated in access_by_lua*,
+            //     * so it is no longer safe to proceed to later phases
+            //     * which may generate responses again */
 
-                if (!ctx->eof) {
-                    dd("eof not yet sent");
+            //    if (!ctx->eof) {
+            //        dd("eof not yet sent");
 
-                    rc = ngx_stream_lua_send_chain_link(r, ctx, NULL
-                                                     /* indicate last_buf */);
-                    if (rc == NGX_ERROR || rc > NGX_OK) {
-                        return rc;
-                    }
-                }
+            //        rc = ngx_stream_lua_send_chain_link(r, ctx, NULL
+            //                                         /* indicate last_buf */);
+            //        if (rc == NGX_ERROR || rc > NGX_OK) {
+            //            return rc;
+            //        }
+            //    }
 
-                return NGX_STREAM_OK;
-            }
+            //    return NGX_STREAM_OK;
+            //}
 
             return NGX_OK;
         }
@@ -137,6 +139,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
         return NGX_DONE;
     }
 
+#if 0
     if (lscf->force_read_body && !ctx->read_body_done) {
         r->request_body_in_single_buf = 1;
         r->request_body_in_persistent_file = 1;
@@ -159,6 +162,7 @@ ngx_stream_lua_access_handler(ngx_stream_session_t *s)
             return NGX_DONE;
         }
     }
+#endif
 
     dd("calling access handler");
     return lscf->access_handler(r);
@@ -267,7 +271,7 @@ ngx_stream_lua_access_by_chunk(lua_State *L, ngx_stream_session_t *s)
     lua_setfenv(co, -2);
 
     /*  save nginx request in coroutine globals table */
-    ngx_stream_lua_set_req(co, s);
+    ngx_stream_lua_set_session(co, s);
 
     /*  {{{ initialize request context */
     ctx = ngx_stream_get_module_ctx(s, ngx_stream_lua_module);
