@@ -32,7 +32,7 @@ Table of Contents
 Status
 ======
 
-Nginx 1.11.9.
+Nginx 1.11.10.
 
 Experimental.
 
