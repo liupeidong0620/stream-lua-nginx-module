@@ -58,6 +58,12 @@ stream {
     server {
         listen 1234;
 
+        # new directive of this fork
+        access_by_lua_block {
+            ngx.log(ngx.ERR, "try some access code")
+        }
+
+        # generate some content
         content_by_lua_block {
             ngx.say("Hello, Lua!")
 
