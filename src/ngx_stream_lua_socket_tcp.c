@@ -394,7 +394,8 @@ ngx_stream_lua_socket_tcp(lua_State *L)
     }
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
-                                 | NGX_STREAM_LUA_CONTEXT_TIMER);
+                                 | NGX_STREAM_LUA_CONTEXT_TIMER
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     lua_createtable(L, 3 /* narr */, 1 /* nrec */);
     lua_pushlightuserdata(L, &ngx_stream_lua_tcp_socket_metatable_key);
@@ -448,7 +449,8 @@ ngx_stream_lua_socket_tcp_connect(lua_State *L)
     }
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
-                                 | NGX_STREAM_LUA_CONTEXT_TIMER);
+                                 | NGX_STREAM_LUA_CONTEXT_TIMER
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     luaL_checktype(L, 1, LUA_TTABLE);
 
@@ -742,7 +744,15 @@ ngx_stream_lua_socket_tcp_connect(lua_State *L)
 
     dd("setting data to %p", u);
 
-    ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+    //ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    // add by chrono
+    if (ctx->entered_content_phase) {
+        ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    } else {
+        ctx->write_event_handler = ngx_stream_lua_core_run_phases;
+    }
 
     return lua_yield(L, 0);
 }
@@ -1124,7 +1134,15 @@ ngx_stream_lua_socket_resolve_retval_handler(ngx_stream_session_t *s,
 
     dd("setting data to %p", u);
 
-    ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+    //ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    // add by chrono
+    if (ctx->entered_content_phase) {
+        ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    } else {
+        ctx->write_event_handler = ngx_stream_lua_core_run_phases;
+    }
 
     return NGX_AGAIN;
 }
@@ -1385,7 +1403,15 @@ new_ssl_name:
 
         c->ssl->handler = ngx_stream_lua_ssl_handshake_handler;
 
-        ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+        //ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+        // add by chrono
+        if (ctx->entered_content_phase) {
+            ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+        } else {
+            ctx->write_event_handler = ngx_stream_lua_core_run_phases;
+        }
 
         return lua_yield(L, 0);
     }
@@ -1832,7 +1858,15 @@ ngx_stream_lua_socket_tcp_receive(lua_State *L)
     coctx->cleanup = ngx_stream_lua_coctx_cleanup;
     coctx->data = u;
 
-    ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+    //ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    // add by chrono
+    if (ctx->entered_content_phase) {
+        ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    } else {
+        ctx->write_event_handler = ngx_stream_lua_core_run_phases;
+    }
 
     u->read_co_ctx = coctx;
     u->read_waiting = 1;
@@ -2340,7 +2374,15 @@ ngx_stream_lua_socket_tcp_send(lua_State *L)
         ctx->writing_raw_req_socket = 1;
     }
 
-    ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+    //ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    // add by chrono
+    if (ctx->entered_content_phase) {
+        ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    } else {
+        ctx->write_event_handler = ngx_stream_lua_core_run_phases;
+    }
 
     u->write_co_ctx = coctx;
     u->write_waiting = 1;
@@ -3587,7 +3629,15 @@ ngx_stream_lua_socket_receiveuntil_iterator(lua_State *L)
     coctx->cleanup = ngx_stream_lua_coctx_cleanup;
     coctx->data = u;
 
-    ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+    //ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    // add by chrono
+    if (ctx->entered_content_phase) {
+        ctx->write_event_handler = ngx_stream_lua_content_wev_handler;
+
+    } else {
+        ctx->write_event_handler = ngx_stream_lua_core_run_phases;
+    }
 
     u->read_co_ctx = coctx;
     u->read_waiting = 1;
@@ -3952,7 +4002,8 @@ ngx_stream_lua_req_socket(lua_State *L)
         return luaL_error(L, "no ctx found");
     }
 
-    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT);
+    ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
+                                        | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     c = s->connection;
 

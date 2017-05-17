@@ -1,3 +1,4 @@
+// add by chrono
 
 /*
  * Copyright (C) Yichun Zhang (agentzh)
@@ -65,6 +66,7 @@
 // add by chrono
 #if 1
 #define NGX_STREAM_LUA_CONTEXT_FILTER         0x010
+#define NGX_STREAM_LUA_CONTEXT_ACCESS         0x020
 #endif
 
 
@@ -163,6 +165,11 @@ struct ngx_stream_lua_main_conf_s {
     ngx_array_t                         *preload_hooks;
                                         /* of ngx_stream_lua_preload_hook_t */
 
+#if 1
+    // add by chrono
+    ngx_flag_t           postponed_to_access_phase_end;
+#endif
+
     ngx_stream_lua_main_conf_handler_pt  init_handler;
     ngx_str_t                            init_src;
 
@@ -208,6 +215,7 @@ typedef struct {
 
 #if 1
     // add by chrono
+    ngx_stream_lua_handler_pt           access_handler;
     ngx_stream_lua_handler_pt           log_handler;
     ngx_stream_filter_pt                filter_handler;
 #endif
@@ -234,6 +242,14 @@ typedef struct {
     // add by chrono
     ngx_str_t                           filter_src;
     u_char                             *filter_src_key;
+
+    // add by chrono
+    u_char                             *access_chunkname;
+    ngx_str_t                           access_src;     /*  access_by_lua
+                                                inline script/script
+                                                file path */
+
+    u_char                             *access_src_key; /* cached key for access_src */
 #endif
 
     ngx_flag_t                          check_client_abort;
@@ -413,6 +429,10 @@ struct ngx_stream_lua_ctx_s {
     unsigned                   exited:1;
 
     unsigned                   entered_content_phase:1;
+#if 1
+    // add by chrono
+    unsigned                   entered_access_phase:1;
+#endif
     unsigned                   writing_raw_req_socket:1; /* used by raw
                                                           * downstream
                                                           * socket */

@@ -54,7 +54,8 @@ ngx_stream_lua_ngx_sleep(lua_State *L)
     }
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
-                                 | NGX_STREAM_LUA_CONTEXT_TIMER);
+                                 | NGX_STREAM_LUA_CONTEXT_TIMER
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
 
     coctx = ctx->cur_co_ctx;
     if (coctx == NULL) {
@@ -104,7 +105,16 @@ ngx_stream_lua_sleep_handler(ngx_event_t *ev)
 
     ctx->cur_co_ctx = coctx;
 
-    (void) ngx_stream_lua_sleep_resume(s, ctx);
+    //(void) ngx_stream_lua_sleep_resume(s, ctx);
+
+    // add by chrono
+    if (ctx->entered_content_phase) {
+        (void) ngx_stream_lua_sleep_resume(s, ctx);
+
+    } else {
+        ctx->resume_handler = ngx_stream_lua_sleep_resume;
+        ngx_stream_core_run_phases(s);
+    }
 }
 
 

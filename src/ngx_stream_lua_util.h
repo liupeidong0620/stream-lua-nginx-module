@@ -260,6 +260,15 @@ ngx_stream_lua_cleanup_pending_operation(ngx_stream_lua_co_ctx_t *coctx)
     }
 }
 
+// add by chrono
+#if 1
+static ngx_inline void
+ngx_stream_lua_core_run_phases(ngx_stream_session_t *s,
+    ngx_stream_lua_ctx_t *ctx)
+{
+    ngx_stream_core_run_phases(s);
+}
+#endif
 
 /* key in Lua vm registry for all the "ngx.ctx" tables */
 #define ngx_stream_lua_ctx_tables_key  "ngx_lua_ctx_tables"
