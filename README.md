@@ -2,7 +2,7 @@
 Name
 ====
 
-ngx_stream_lua_module - A modification of original stream lua, work with latest nginx.
+ngx_stream_lua_module - A modification of original stream lua, works with latest nginx.
 
 Embed the power of Lua into Nginx stream/TCP Servers.
 
@@ -32,17 +32,18 @@ Table of Contents
 Status
 ======
 
-Nginx 1.11.10.
+Nginx 1.11.5+ .
 
 Experimental.
 
 Changes
 =======
 
-* work with nginx 1.11.5 and later
-* support all stream variables (read/write)
+* works with nginx 1.11.5 and later
+* supports all stream variables (read/write)
 * log_by_lua_file and log_by_lua_block
 * filter_by_lua_file and filter_by_lua_block
+* access_by_lua_file and access_by_lua_block
 
 Synopsis
 ========
@@ -283,7 +284,6 @@ output to be completely flushed out (to the system socket send buffers).
 TODO
 ====
 
-* Add new directives `access_by_lua_block` and `access_by_lua_file`.
 * Add new directives `balancer_by_lua_block` and `balancer_by_lua_file`.
 * Add new directives `ssl_certificate_by_lua_block` and `ssl_certificate_by_lua_file`.
 * Add `ngx.semaphore` API.
