@@ -67,7 +67,11 @@ ngx_stream_lua_ngx_echo(lua_State *L, unsigned newline)
     }
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
-                                         | NGX_STREAM_LUA_CONTEXT_ACCESS);
+                                         | NGX_STREAM_LUA_CONTEXT_ACCESS
+#ifdef NGX_STREAM_HAS_POST_READ
+                                         | NGX_STREAM_LUA_CONTEXT_POSTREAD
+#endif
+                                 );
 
 #if 0
     if (ctx->acquired_raw_req_socket) {
