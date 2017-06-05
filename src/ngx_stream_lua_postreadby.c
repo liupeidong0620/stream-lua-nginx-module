@@ -74,25 +74,6 @@ ngx_stream_lua_postread_handler(ngx_stream_session_t *s)
         }
 
         if (rc == NGX_OK) {
-            //if (r->header_sent) {
-            //    dd("header already sent");
-
-            //    /* response header was already generated in postread_by_lua*,
-            //     * so it is no longer safe to proceed to later phases
-            //     * which may generate responses again */
-
-            //    if (!ctx->eof) {
-            //        dd("eof not yet sent");
-
-            //        rc = ngx_stream_lua_send_chain_link(r, ctx, NULL
-            //                                         /* indicate last_buf */);
-            //        if (rc == NGX_ERROR || rc > NGX_OK) {
-            //            return rc;
-            //        }
-            //    }
-
-            //    return NGX_STREAM_OK;
-            //}
 
             return NGX_OK;
         }

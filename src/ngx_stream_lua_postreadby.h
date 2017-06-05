@@ -12,11 +12,6 @@
 
 #include "ngx_stream_lua_common.h"
 
-// we add our own post_read phase in struct ngx_stream_phases
-#if NGX_STREAM_LOG_PHASE >=7
-#define NGX_STREAM_HAS_POST_READ
-#endif
-
 // only enabled in our custmized nginx
 #ifdef NGX_STREAM_HAS_POST_READ
 

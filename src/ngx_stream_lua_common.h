@@ -46,6 +46,11 @@
 #   endif
 #endif
 
+// add by chrono
+// we add our own post_read phase in struct ngx_stream_phases
+#if NGX_STREAM_LOG_PHASE >=7
+#define NGX_STREAM_HAS_POST_READ
+#endif
 
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
@@ -67,6 +72,7 @@
 #if 1
 #define NGX_STREAM_LUA_CONTEXT_FILTER         0x010
 #define NGX_STREAM_LUA_CONTEXT_ACCESS         0x020
+#define NGX_STREAM_LUA_CONTEXT_POSTREAD       0x021
 #endif
 
 
@@ -252,6 +258,17 @@ typedef struct {
     u_char                             *access_src_key; /* cached key for access_src */
 #endif
 
+#ifdef NGX_STREAM_HAS_POST_READ
+    // add by chrono
+    u_char                             *postread_chunkname;
+    ngx_str_t                           postread_src;     /*  postread_by_lua
+                                                inline script/script
+                                                file path */
+
+    u_char                             *postread_src_key; /* cached key for access_src */
+    ngx_stream_lua_handler_pt           postread_handler;
+#endif
+
     ngx_flag_t                          check_client_abort;
 
     ngx_msec_t                          resolver_timeout; /* resolver_timeout */
@@ -433,6 +450,13 @@ struct ngx_stream_lua_ctx_s {
     // add by chrono
     unsigned                   entered_access_phase:1;
 #endif
+
+// only enabled in our custmized nginx
+#ifdef NGX_STREAM_HAS_POST_READ
+    // add by chrono
+    unsigned                   entered_postread_phase:1;
+#endif
+
     unsigned                   writing_raw_req_socket:1; /* used by raw
                                                           * downstream
                                                           * socket */
