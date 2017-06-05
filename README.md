@@ -205,7 +205,7 @@ Many Lua API functions are ported from the `ngx_http_lua_module`. Check out the 
 
 * ngx.var.VARIABLE
 
-    Port variables from http to stream subsystem, but readonly.
+    Port variables from http to stream subsystem, read and write.
 * [Core constants](https://github.com/openresty/lua-nginx-module#core-constants)
 
     `ngx.OK`, `ngx.ERROR`, and etc.
