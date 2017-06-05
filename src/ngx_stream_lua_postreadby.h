@@ -17,6 +17,7 @@
 #define NGX_STREAM_HAS_POST_READ
 #endif
 
+// only enabled in our custmized nginx
 #ifdef NGX_STREAM_HAS_POST_READ
 
 ngx_int_t ngx_stream_lua_postread_handler(ngx_stream_session_t *s);
