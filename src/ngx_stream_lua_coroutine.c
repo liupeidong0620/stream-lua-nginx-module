@@ -74,7 +74,11 @@ ngx_stream_lua_coroutine_create_helper(lua_State *L, ngx_stream_session_t *s,
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
                                  | NGX_STREAM_LUA_CONTEXT_TIMER
-                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS
+#ifdef NGX_STREAM_HAS_POST_READ
+                                 | NGX_STREAM_LUA_CONTEXT_POSTREAD
+#endif
+                                 );
 
     vm = ngx_stream_lua_get_lua_vm(s, ctx);
 
@@ -151,7 +155,11 @@ ngx_stream_lua_coroutine_resume(lua_State *L)
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
                                  | NGX_STREAM_LUA_CONTEXT_TIMER
-                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS
+#ifdef NGX_STREAM_HAS_POST_READ
+                                 | NGX_STREAM_LUA_CONTEXT_POSTREAD
+#endif
+                                 );
 
     p_coctx = ctx->cur_co_ctx;
     if (p_coctx == NULL) {
@@ -212,7 +220,11 @@ ngx_stream_lua_coroutine_yield(lua_State *L)
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
                                  | NGX_STREAM_LUA_CONTEXT_TIMER
-                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS
+#ifdef NGX_STREAM_HAS_POST_READ
+                                 | NGX_STREAM_LUA_CONTEXT_POSTREAD
+#endif
+                                 );
 
     coctx = ctx->cur_co_ctx;
 
@@ -368,7 +380,11 @@ ngx_stream_lua_coroutine_status(lua_State *L)
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
                                  | NGX_STREAM_LUA_CONTEXT_TIMER
-                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS
+#ifdef NGX_STREAM_HAS_POST_READ
+                                 | NGX_STREAM_LUA_CONTEXT_POSTREAD
+#endif
+                                 );
 
     names = ngx_stream_lua_co_status_names;
 
