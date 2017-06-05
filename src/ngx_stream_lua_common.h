@@ -194,6 +194,12 @@ struct ngx_stream_lua_main_conf_s {
     unsigned                            requires_log:1;
     unsigned                            requires_filter:1;
 #endif
+
+// only enabled in our custmized nginx
+#ifdef NGX_STREAM_HAS_POST_READ
+    // add by chrono
+    unsigned                            requires_postread:1;
+#endif
 };
 
 
