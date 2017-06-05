@@ -638,7 +638,7 @@ ngx_stream_lua_postread_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     } else {
 
-        lscf->access_src = value[1];
+        lscf->postread_src = value[1];
 
         /* no variable found */
         p = ngx_palloc(cf->pool, NGX_STREAM_LUA_FILE_KEY_LEN + 1);
@@ -657,7 +657,7 @@ ngx_stream_lua_postread_by_lua(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
 
     lmcf = ngx_stream_conf_get_module_main_conf(cf, ngx_stream_lua_module);
 
-    lmcf->requires_access = 1;
+    lmcf->requires_postread = 1;
 
     return NGX_CONF_OK;
 }

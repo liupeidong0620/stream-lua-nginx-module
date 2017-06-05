@@ -35,8 +35,8 @@ ngx_stream_lua_postread_handler(ngx_stream_session_t *s)
     ngx_stream_lua_ctx_t         *ctx;
     ngx_stream_lua_srv_conf_t    *lscf;
     //ngx_stream_lua_main_conf_t   *lmcf;
-    ngx_stream_phase_handler_t    tmp, *ph, *cur_ph, *last_ph;
-    ngx_stream_core_main_conf_t  *cmcf;
+    //ngx_stream_phase_handler_t    tmp, *ph, *cur_ph, *last_ph;
+    //ngx_stream_core_main_conf_t  *cmcf;
 
     //ngx_log_debug2(NGX_LOG_DEBUG_STREAM, r->connection->log, 0,
     //               "lua postread handler, uri:\"%V\" c:%ud", &r->uri,

@@ -48,9 +48,9 @@
 
 // add by chrono
 // we add our own post_read phase in struct ngx_stream_phases
-#if NGX_STREAM_LOG_PHASE >=7
-#define NGX_STREAM_HAS_POST_READ
-#endif
+//#if (NGX_STREAM_LOG_PHASE >=7)
+#define NGX_STREAM_HAS_POST_READ 1
+//#endif
 
 #ifndef MD5_DIGEST_LENGTH
 #define MD5_DIGEST_LENGTH 16
