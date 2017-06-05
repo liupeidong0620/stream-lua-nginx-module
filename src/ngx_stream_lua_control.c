@@ -58,7 +58,11 @@ ngx_stream_lua_ngx_exit(lua_State *L)
 
     ngx_stream_lua_check_context(L, ctx, NGX_STREAM_LUA_CONTEXT_CONTENT
                                  | NGX_STREAM_LUA_CONTEXT_TIMER
-                                 | NGX_STREAM_LUA_CONTEXT_ACCESS);
+                                 | NGX_STREAM_LUA_CONTEXT_ACCESS
+#ifdef NGX_STREAM_HAS_POST_READ
+                                 | NGX_STREAM_LUA_CONTEXT_POSTREAD
+#endif
+                                 );
 
     rc = (ngx_int_t) luaL_checkinteger(L, 1);
 
