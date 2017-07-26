@@ -41,10 +41,10 @@ Changes
 
 * works with nginx 1.11.5 and later
 * supports all stream variables (read/write)
-* log_by_lua_file and log_by_lua_block
-* filter_by_lua_file and filter_by_lua_block
-* access_by_lua_file and access_by_lua_block
-* ngx.master.pid (must patch nginx source code)
+* `log_by_lua_file` and `log_by_lua_block`
+* `filter_by_lua_file` and `filter_by_lua_block`
+* `access_by_lua_file` and `access_by_lua_block`
+* `ngx.master.pid` (must patch nginx source code)
 
 Synopsis
 ========
