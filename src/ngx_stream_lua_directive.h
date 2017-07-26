@@ -59,4 +59,13 @@ char *ngx_stream_lua_access_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
     void *conf);
 #endif
 
+// only enabled in our custmized nginx
+// add by chrono
+#ifdef NGX_STREAM_HAS_POST_READ
+char *ngx_stream_lua_postread_by_lua_block(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
+char *ngx_stream_lua_postread_by_lua(ngx_conf_t *cf, ngx_command_t *cmd,
+    void *conf);
+#endif
+
 #endif /* _NGX_STREAM_LUA_DIRECTIVE_H_INCLUDED_ */

@@ -26,6 +26,11 @@
 #include "ngx_stream_lua_accessby.h"
 #endif
 
+// add by chrono
+#ifdef NGX_STREAM_HAS_POST_READ
+#include "ngx_stream_lua_postreadby.h"
+#endif
+
 
 static void *ngx_stream_lua_create_srv_conf(ngx_conf_t *cf);
 static char *ngx_stream_lua_merge_srv_conf(ngx_conf_t *cf, void *parent,
@@ -163,6 +168,26 @@ static ngx_command_t  ngx_stream_lua_commands[] = {
       NGX_STREAM_SRV_CONF_OFFSET,
       0,
       (void *) ngx_stream_lua_access_handler_file },
+#endif
+
+// add by chrono
+#ifdef NGX_STREAM_HAS_POST_READ
+    /* postread_by_lua_block { <inline script> } */
+    { ngx_string("postread_by_lua_block"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+                        |NGX_CONF_BLOCK|NGX_CONF_NOARGS,
+      ngx_stream_lua_postread_by_lua_block,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_postread_handler_inline },
+
+    { ngx_string("postread_by_lua_file"),
+      NGX_STREAM_MAIN_CONF|NGX_STREAM_SRV_CONF
+                        |NGX_CONF_TAKE1,
+      ngx_stream_lua_postread_by_lua,
+      NGX_STREAM_SRV_CONF_OFFSET,
+      0,
+      (void *) ngx_stream_lua_postread_handler_file },
 #endif
 
     { ngx_string("lua_max_running_timers"),
@@ -712,6 +737,17 @@ ngx_stream_lua_init(ngx_conf_t *cf)
         }
     }
 
+#endif
+
+#ifdef NGX_STREAM_HAS_POST_READ
+    if (lmcf->requires_postread) {
+        h = ngx_array_push(&cmcf->phases[NGX_STREAM_POST_READ_PHASE].handlers);
+        if (h == NULL) {
+            return NGX_ERROR;
+        }
+
+        *h = ngx_stream_lua_postread_handler;
+    }
 #endif
 
 #ifndef NGX_LUA_NO_FFI_API
