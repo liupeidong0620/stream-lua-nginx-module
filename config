@@ -311,6 +311,7 @@ NGX_ADDON_SRCS="$NGX_ADDON_SRCS \
                 $ngx_addon_dir/src/ngx_stream_lua_filterby.c \
                 $ngx_addon_dir/src/ngx_stream_lua_accessby.c \
                 $ngx_addon_dir/src/ngx_stream_lua_postreadby.c \
+                $ngx_addon_dir/src/ngx_stream_lua_master.c \
                 \
                 $ngx_addon_dir/src/ngx_stream_lua_util.c \
                 $ngx_addon_dir/src/ngx_stream_lua_cache.c \

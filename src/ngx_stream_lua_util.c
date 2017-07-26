@@ -40,6 +40,7 @@
 // add by chrono
 #if 1
 #include "ngx_stream_lua_filterby.h"
+#include "ngx_stream_lua_master.h"
 #endif
 
 static ngx_int_t ngx_stream_lua_flush_pending_output(ngx_stream_session_t *s,
@@ -2768,6 +2769,11 @@ ngx_stream_lua_inject_ngx_api(lua_State *L, ngx_stream_lua_main_conf_t *lmcf,
     ngx_stream_lua_inject_timer_api(L);
     ngx_stream_lua_inject_config_api(L);
     ngx_stream_lua_inject_worker_api(L);
+
+// add by chrono
+#if 1
+    ngx_stream_lua_inject_master_api(L);
+#endif
 
     ngx_stream_lua_inject_misc_api(L);
 
