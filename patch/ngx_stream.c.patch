@@ -1,0 +1,16 @@
+--- ngx_stream.c.origin	2017-06-02 12:45:48.246896000 +0800
++++ ngx_stream.c	2017-06-02 12:46:16.196864000 +0800
+@@ -307,6 +307,13 @@
+         return NGX_ERROR;
+     }
+ 
++    if (ngx_array_init(&cmcf->phases[NGX_STREAM_POST_READ_PHASE].handlers,
++                       cf->pool, 1, sizeof(ngx_stream_handler_pt))
++        != NGX_OK)
++    {
++        return NGX_ERROR;
++    }
++
+     if (ngx_array_init(&cmcf->phases[NGX_STREAM_LOG_PHASE].handlers,
+                        cf->pool, 1, sizeof(ngx_stream_handler_pt))
+         != NGX_OK)
