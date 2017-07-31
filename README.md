@@ -72,7 +72,7 @@ stream {
             ngx.say("now is : ", ngx.var.time_local)
 
             -- new api : ngx.master.pid
-            -- it can be a unique id for a nginx instance
+            -- it can be an unique id for a nginx instance
             ngx.say("master's pid is ", ngx.master.pid())
         }
 
