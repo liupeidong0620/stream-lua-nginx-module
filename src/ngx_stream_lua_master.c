@@ -1,7 +1,7 @@
 // add by chrono
 //
 // only enabled when we patched nginx.c
-// config nginx with : -DNGX_STREAM_HAS_MASTER_PID=1
+// config nginx with : -DNGX_HAVE_MASTER_PID=1
 
 /*
  * Copyright (C) Yichun Zhang (agentzh)
@@ -32,7 +32,7 @@ ngx_stream_lua_inject_master_api(lua_State *L)
 static int
 ngx_stream_lua_ngx_master_pid(lua_State *L)
 {
-#ifdef NGX_STREAM_HAS_MASTER_PID
+#ifdef NGX_HAVE_MASTER_PID
     extern ngx_pid_t ngx_master_pid;
     lua_pushinteger(L, (lua_Integer) ngx_master_pid);
 #else
