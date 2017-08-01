@@ -1,23 +1,23 @@
---- nginx.c	2017-08-01 12:16:11.517828564 +0800
-+++ nginx.c.origin	2017-07-26 11:57:23.584396999 +0800
-@@ -190,9 +190,6 @@
+--- nginx.c.origin	2017-07-26 11:57:23.584396999 +0800
++++ nginx.c	2017-08-01 12:16:11.517828564 +0800
+@@ -190,6 +190,9 @@
  
  static char **ngx_os_environ;
  
--#ifdef NGX_HAVE_MASTER_PID
--ngx_pid_t              ngx_master_pid;
--#endif
++#ifdef NGX_HAVE_MASTER_PID
++ngx_pid_t              ngx_master_pid;
++#endif
  
  int ngx_cdecl
  main(int argc, char *const *argv)
-@@ -354,10 +351,6 @@
+@@ -351,6 +354,10 @@
  
  #endif
  
--#ifdef NGX_HAVE_MASTER_PID
--    ngx_master_pid = ngx_pid;
--#endif
--
++#ifdef NGX_HAVE_MASTER_PID
++    ngx_master_pid = ngx_pid;
++#endif
++
      if (ngx_create_pidfile(&ccf->pid, cycle->log) != NGX_OK) {
          return 1;
      }
