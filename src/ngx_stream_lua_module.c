@@ -741,9 +741,18 @@ ngx_stream_lua_init(ngx_conf_t *cf)
 
 #ifdef NGX_STREAM_HAS_POST_READ
     if (lmcf->requires_postread) {
-        h = ngx_array_push(&cmcf->phases[NGX_STREAM_POST_READ_PHASE].handlers);
+        arr = &cmcf->phases[NGX_STREAM_POST_READ_PHASE].handlers;
+
+        h = ngx_array_push(arr);
         if (h == NULL) {
             return NGX_ERROR;
+        }
+
+        // move handler to the first position in array
+        if (arr->nelts > 1) {
+            h = arr->elts;
+            ngx_memmove(&h[1], h,
+                        (arr->nelts - 1) * sizeof(ngx_stream_handler_pt));
         }
 
         *h = ngx_stream_lua_postread_handler;
