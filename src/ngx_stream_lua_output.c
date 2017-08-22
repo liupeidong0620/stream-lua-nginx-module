@@ -718,7 +718,12 @@ ngx_stream_lua_send_chain_link(ngx_stream_session_t *s,
     }
 #endif
 
+// add by chrono
+#if nginx_version < 1011005
     rc = ngx_chain_writer(&ctx->out_writer, in);
+#else
+    rc = ngx_stream_top_filter(s, in, 1 /*from upstream*/);
+#endif
 
     if (rc == NGX_ERROR) {
         s->connection->error = 1;
