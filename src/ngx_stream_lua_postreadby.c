@@ -73,10 +73,12 @@ ngx_stream_lua_postread_handler(ngx_stream_session_t *s)
             return rc;
         }
 
-        if (rc == NGX_OK) {
+        // return NGX_DECLINED for other modules
 
-            return NGX_OK;
-        }
+        //if (rc == NGX_OK) {
+
+        //    return NGX_OK;
+        //}
 
         return NGX_DECLINED;
     }
@@ -279,7 +281,8 @@ ngx_stream_lua_postread_by_chunk(lua_State *L, ngx_stream_session_t *s)
         }
     }
 
-#if 1
+    // return NGX_DECLINED for other modules
+#if 0
     if (rc == NGX_OK) {
         return NGX_OK;
     }

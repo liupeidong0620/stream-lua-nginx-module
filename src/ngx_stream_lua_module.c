@@ -749,11 +749,11 @@ ngx_stream_lua_init(ngx_conf_t *cf)
         }
 
         // move handler to the first position in array
-        if (arr->nelts > 1) {
-            h = arr->elts;
-            ngx_memmove(&h[1], h,
-                        (arr->nelts - 1) * sizeof(ngx_stream_handler_pt));
-        }
+        //if (arr->nelts > 1) {
+        //    h = arr->elts;
+        //    ngx_memmove(&h[1], h,
+        //                (arr->nelts - 1) * sizeof(ngx_stream_handler_pt));
+        //}
 
         *h = ngx_stream_lua_postread_handler;
     }
