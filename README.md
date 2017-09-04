@@ -34,7 +34,7 @@ Status
 
 Nginx 1.11.5+ .
 
-Experimental.
+Experimental, and maybe upgrade to lastest original repo in the future.
 
 Changes
 =======
