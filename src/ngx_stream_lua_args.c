@@ -15,6 +15,9 @@
 #include "ngx_stream_lua_util.h"
 
 
+
+
+
 int
 ngx_stream_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
 {
@@ -39,7 +42,7 @@ ngx_stream_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
             src = q; dst = q;
 
             ngx_stream_lua_unescape_uri(&dst, &src, p - q,
-                                        NGX_UNESCAPE_URI_COMPONENT);
+                                      NGX_UNESCAPE_URI_COMPONENT);
 
             dd("pushing key %.*s", (int) (dst - q), q);
 
@@ -57,7 +60,7 @@ ngx_stream_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
             src = q; dst = q;
 
             ngx_stream_lua_unescape_uri(&dst, &src, p - q,
-                                        NGX_UNESCAPE_URI_COMPONENT);
+                                      NGX_UNESCAPE_URI_COMPONENT);
 
             dd("pushing key or value %.*s", (int) (dst - q), q);
 
@@ -109,7 +112,7 @@ ngx_stream_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
         src = q; dst = q;
 
         ngx_stream_lua_unescape_uri(&dst, &src, p - q,
-                                    NGX_UNESCAPE_URI_COMPONENT);
+                                  NGX_UNESCAPE_URI_COMPONENT);
 
         dd("pushing key or value %.*s", (int) (dst - q), q);
 
@@ -142,3 +145,9 @@ ngx_stream_lua_parse_args(lua_State *L, u_char *buf, u_char *last, int max)
 
     return 1;
 }
+
+
+
+
+
+/* vi:set ft=c ts=4 sw=4 et fdm=marker: */

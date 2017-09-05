@@ -1,6 +1,7 @@
 # vim:set ft= ts=4 sw=4 et fdm=marker:
 
 use Test::Nginx::Socket::Lua::Stream;
+
 repeat_each(2);
 
 plan tests => repeat_each() * (blocks() * 7);
@@ -25,7 +26,7 @@ sub read_file {
     $cert;
 }
 
-our $StartComRootCertificate = read_file("t/cert/startcom.crt");
+our $ComodoRootCertificate = read_file("t/cert/comodo-ca.crt");
 our $EquifaxRootCertificate = read_file("t/cert/equifax.crt");
 our $TestCertificate = read_file("t/cert/test.crt");
 our $TestCertificateKey = read_file("t/cert/test.key");
@@ -37,61 +38,61 @@ __DATA__
 
 === TEST 1: www.google.com
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER ipv6=off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
-    content_by_lua_block {
-        -- avoid flushing google in "check leak" testing mode:
-        local counter = package.loaded.counter
-        if not counter then
-            counter = 1
-        elseif counter >= 2 then
-            return ngx.exit(503)
-        else
-            counter = counter + 1
-        end
-        package.loaded.counter = counter
-
-        do
-            local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
-            local ok, err = sock:connect("www.google.com", 443)
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
+    content_by_lua '
+            -- avoid flushing google in "check leak" testing mode:
+            local counter = package.loaded.counter
+            if not counter then
+                counter = 1
+            elseif counter >= 2 then
+                return ngx.exit(503)
+            else
+                counter = counter + 1
             end
+            package.loaded.counter = counter
 
-            ngx.say("connected: ", ok)
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
+                local ok, err = sock:connect("www.google.com", 443)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
 
-            local sess, err = sock:sslhandshake()
-            if not sess then
-                ngx.say("failed to do SSL handshake: ", err)
-                return
-            end
+                ngx.say("connected: ", ok)
 
-            ngx.say("ssl handshake: ", type(sess))
+                local sess, err = sock:sslhandshake()
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
 
-            local req = "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n"
-            local bytes, err = sock:send(req)
-            if not bytes then
-                ngx.say("failed to send stream request: ", err)
-                return
-            end
+                ngx.say("ssl handshake: ", type(sess))
 
-            ngx.say("sent stream request: ", bytes, " bytes.")
+                local req = "GET / HTTP/1.1\\r\\nHost: www.google.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
 
-            local line, err = sock:receive()
-            if not line then
-                ngx.say("failed to recieve response status line: ", err)
-                return
-            end
+                ngx.say("sent http request: ", bytes, " bytes.")
 
-            ngx.say("received: ", line)
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
 
-            local ok, err = sock:close()
-            ngx.say("close: ", ok, " ", err)
-        end  -- do
-        collectgarbage()
-    }
+                ngx.say("received: ", line)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        ';
 
 --- config
     server_tokens off;
@@ -99,7 +100,7 @@ __DATA__
 --- stream_response_like chop
 \Aconnected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
+sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
@@ -119,7 +120,7 @@ SSL reused session
 
 === TEST 2: no SNI, no verify
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
@@ -192,14 +193,14 @@ SSL reused session
 
 === TEST 3: SNI, no verify
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -207,7 +208,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org")
+            local session, err = sock:sslhandshake(nil, "openresty.org")
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -215,7 +216,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -244,8 +245,8 @@ SSL reused session
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -255,7 +256,7 @@ qr/^lua ssl save session: ([0-9A-F]+):2
 lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -266,7 +267,7 @@ SSL reused session
 
 === TEST 4: ssl session reuse
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
@@ -276,7 +277,7 @@ SSL reused session
 
         local session
         for i = 1, 2 do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -284,7 +285,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            session, err = sock:sslhandshake(session, "iscribblet.org")
+            session, err = sock:sslhandshake(session, "openresty.org")
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -292,7 +293,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -320,13 +321,13 @@ SSL reused session
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
@@ -351,9 +352,9 @@ lua ssl free session
 
 
 === TEST 5: certificate does not match host name (verify)
-The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.org".
+The certificate of "openresty.org" does not contain the name "blah.openresty.org".
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 5;
 
@@ -362,7 +363,7 @@ The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.o
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("agentzh.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -370,12 +371,161 @@ The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.o
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "blah.agentzh.org", true)
+            local session, err = sock:sslhandshake(nil, "blah.openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
             else
                 ngx.say("ssl handshake: ", type(session))
             end
+
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send stream request: ", err)
+                return
+            end
+
+            ngx.say("sent stream request: ", bytes, " bytes.")
+
+            local line, err = sock:receive()
+            if not line then
+                ngx.say("failed to recieve response status line: ", err)
+                return
+            end
+
+            ngx.say("received: ", line)
+
+            local ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        end  -- do
+        collectgarbage()
+    }
+
+--- config
+    server_tokens off;
+
+--- user_files eval
+">>> trusted.crt
+$::ComodoRootCertificate"
+
+--- stream_response
+connected: 1
+failed to do SSL handshake: certificate host mismatch
+failed to send stream request: closed
+
+--- log_level: debug
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log_out
+--- error_log
+stream lua ssl server name: "blah.openresty.org"
+stream lua ssl certificate does not match host "blah.openresty.org"
+--- no_error_log
+SSL reused session
+[alert]
+--- timeout: 5
+
+
+
+=== TEST 6: certificate does not match host name (verify, no log socket errors)
+The certificate for "openresty.org" does not contain the name "blah.openresty.org".
+--- stream_server_config
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_trusted_certificate ../html/trusted.crt;
+    lua_socket_log_errors off;
+    lua_ssl_verify_depth 2;
+
+    content_by_lua_block {
+        local sock = ngx.socket.tcp()
+        sock:settimeout(2000)
+
+        do
+            local ok, err = sock:connect("openresty.org", 443)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local session, err = sock:sslhandshake(nil, "blah.openresty.org", true)
+            if not session then
+                ngx.say("failed to do SSL handshake: ", err)
+            else
+                ngx.say("ssl handshake: ", type(session))
+            end
+
+            local req = "GET / HTTP/1.1\r\nHost: blah.openresty.org\r\nConnection: close\r\n\r\n"
+            local bytes, err = sock:send(req)
+            if not bytes then
+                ngx.say("failed to send stream request: ", err)
+                return
+            end
+
+            ngx.say("sent stream request: ", bytes, " bytes.")
+
+            local line, err = sock:receive()
+            if not line then
+                ngx.say("failed to recieve response status line: ", err)
+                return
+            end
+
+            ngx.say("received: ", line)
+
+            local ok, err = sock:close()
+            ngx.say("close: ", ok, " ", err)
+        end  -- do
+        collectgarbage()
+    }
+
+--- config
+    server_tokens off;
+
+--- user_files eval
+">>> trusted.crt
+$::ComodoRootCertificate"
+
+--- stream_response
+connected: 1
+failed to do SSL handshake: certificate host mismatch
+failed to send stream request: closed
+
+--- log_level: debug
+--- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
+--- grep_error_log_out
+--- error_log
+lua ssl server name: "blah.openresty.org"
+--- no_error_log
+lua ssl certificate does not match host
+SSL reused session
+[alert]
+--- timeout: 5
+
+
+
+=== TEST 7: certificate does not match host name (no verify)
+--- stream_server_config
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+
+    content_by_lua_block {
+        local sock = ngx.socket.tcp()
+        sock:settimeout(2000)
+
+        do
+            local ok, err = sock:connect("openresty.org", 443)
+            if not ok then
+                ngx.say("failed to connect: ", err)
+                return
+            end
+
+            ngx.say("connected: ", ok)
+
+            local session, err = sock:sslhandshake(nil, "openresty.org", false)
+            if not session then
+                ngx.say("failed to do SSL handshake: ", err)
+                return
+            end
+
+            ngx.say("ssl handshake: ", type(session))
 
             local req = "GET / HTTP/1.1\r\nHost: agentzh.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
@@ -403,160 +553,11 @@ The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.o
 --- config
     server_tokens off;
 
---- user_files eval
-">>> trusted.crt
-$::StartComRootCertificate"
-
---- stream_response
-connected: 1
-failed to do SSL handshake: certificate host mismatch
-failed to send stream request: closed
-
---- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
---- grep_error_log_out
---- error_log
-lua ssl server name: "blah.agentzh.org"
-lua ssl certificate does not match host "blah.agentzh.org"
---- no_error_log
-SSL reused session
-[alert]
---- timeout: 5
-
-
-
-=== TEST 6: certificate does not match host name (verify, no log socket errors)
-The certificate for "blah.agentzh.org" does not contain the name "blah.agentzh.org".
---- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
-    lua_ssl_trusted_certificate ../html/trusted.crt;
-    lua_socket_log_errors off;
-    lua_ssl_verify_depth 2;
-
-    content_by_lua_block {
-        local sock = ngx.socket.tcp()
-        sock:settimeout(2000)
-
-        do
-            local ok, err = sock:connect("agentzh.org", 443)
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
-            end
-
-            ngx.say("connected: ", ok)
-
-            local session, err = sock:sslhandshake(nil, "blah.agentzh.org", true)
-            if not session then
-                ngx.say("failed to do SSL handshake: ", err)
-            else
-                ngx.say("ssl handshake: ", type(session))
-            end
-
-            local req = "GET / HTTP/1.1\r\nHost: blah.agentzh.org\r\nConnection: close\r\n\r\n"
-            local bytes, err = sock:send(req)
-            if not bytes then
-                ngx.say("failed to send stream request: ", err)
-                return
-            end
-
-            ngx.say("sent stream request: ", bytes, " bytes.")
-
-            local line, err = sock:receive()
-            if not line then
-                ngx.say("failed to recieve response status line: ", err)
-                return
-            end
-
-            ngx.say("received: ", line)
-
-            local ok, err = sock:close()
-            ngx.say("close: ", ok, " ", err)
-        end  -- do
-        collectgarbage()
-    }
-
---- config
-    server_tokens off;
-
---- user_files eval
-">>> trusted.crt
-$::StartComRootCertificate"
-
---- stream_response
-connected: 1
-failed to do SSL handshake: certificate host mismatch
-failed to send stream request: closed
-
---- log_level: debug
---- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
---- grep_error_log_out
---- error_log
-lua ssl server name: "blah.agentzh.org"
---- no_error_log
-lua ssl certificate does not match host
-SSL reused session
-[alert]
---- timeout: 5
-
-
-
-=== TEST 7: certificate does not match host name (no verify)
---- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
-
-    content_by_lua_block {
-        local sock = ngx.socket.tcp()
-        sock:settimeout(2000)
-
-        do
-            local ok, err = sock:connect("agentzh.org", 443)
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
-            end
-
-            ngx.say("connected: ", ok)
-
-            local session, err = sock:sslhandshake(nil, "agentzh.org", false)
-            if not session then
-                ngx.say("failed to do SSL handshake: ", err)
-                return
-            end
-
-            ngx.say("ssl handshake: ", type(session))
-
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
-            local bytes, err = sock:send(req)
-            if not bytes then
-                ngx.say("failed to send stream request: ", err)
-                return
-            end
-
-            ngx.say("sent stream request: ", bytes, " bytes.")
-
-            local line, err = sock:receive()
-            if not line then
-                ngx.say("failed to recieve response status line: ", err)
-                return
-            end
-
-            ngx.say("received: ", line)
-
-            local ok, err = sock:close()
-            ngx.say("close: ", ok, " ", err)
-        end  -- do
-        collectgarbage()
-    }
-
---- config
-    server_tokens off;
-
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 56 bytes.
+received: HTTP/1.1 404 Not Found
 close: 1 nil
 
 --- log_level: debug
@@ -567,7 +568,7 @@ lua ssl free session: ([0-9A-F]+):1
 $/
 
 --- error_log
-lua ssl server name: "agentzh.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -576,9 +577,9 @@ SSL reused session
 
 
 
-=== TEST 8: iscribblet.org: passing SSL verify
+=== TEST 8: openresty.org: passing SSL verify
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
 
@@ -587,7 +588,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -595,7 +596,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org", true)
+            local session, err = sock:sslhandshake(nil, "openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -603,7 +604,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -631,13 +632,13 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -648,7 +649,7 @@ lua ssl free session: ([0-9A-F]+):1
 $/
 
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -659,7 +660,7 @@ SSL reused session
 
 === TEST 9: ssl verify depth not enough (with automatic error logging)
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 1;
 
@@ -668,7 +669,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -676,14 +677,14 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org", true)
+            local session, err = sock:sslhandshake(nil, "openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
             else
                 ngx.say("ssl handshake: ", type(session))
             end
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -711,7 +712,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
@@ -722,7 +723,7 @@ failed to send stream request: closed
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
 --- grep_error_log_out
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 lua ssl certificate verify error: (20: unable to get local issuer certificate)
 --- no_error_log
 SSL reused session
@@ -733,7 +734,7 @@ SSL reused session
 
 === TEST 10: ssl verify depth not enough (without automatic error logging)
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 1;
     lua_socket_log_errors off;
@@ -743,7 +744,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -751,14 +752,14 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org", true)
+            local session, err = sock:sslhandshake(nil, "openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
             else
                 ngx.say("ssl handshake: ", type(session))
             end
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -786,7 +787,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
@@ -797,7 +798,7 @@ failed to send stream request: closed
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
 --- grep_error_log_out
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 lua ssl certificate verify error
 SSL reused session
@@ -808,63 +809,63 @@ SSL reused session
 
 === TEST 11: www.google.com  (SSL verify passes)
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER ipv6=off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 3;
 
-    content_by_lua_block {
-        -- avoid flushing google in "check leak" testing mode:
-        local counter = package.loaded.counter
-        if not counter then
-            counter = 1
-        elseif counter >= 2 then
-            return ngx.exit(503)
-        else
-            counter = counter + 1
-        end
-        package.loaded.counter = counter
-
-        do
-            local sock = ngx.socket.tcp()
-            sock:settimeout(2000)
-            local ok, err = sock:connect("www.google.com", 443)
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
+    content_by_lua '
+            -- avoid flushing google in "check leak" testing mode:
+            local counter = package.loaded.counter
+            if not counter then
+                counter = 1
+            elseif counter >= 2 then
+                return ngx.exit(503)
+            else
+                counter = counter + 1
             end
+            package.loaded.counter = counter
 
-            ngx.say("connected: ", ok)
+            do
+                local sock = ngx.socket.tcp()
+                sock:settimeout(2000)
+                local ok, err = sock:connect("www.google.com", 443)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
 
-            local sess, err = sock:sslhandshake(nil, "www.google.com", true)
-            if not sess then
-                ngx.say("failed to do SSL handshake: ", err)
-                return
-            end
+                ngx.say("connected: ", ok)
 
-            ngx.say("ssl handshake: ", type(sess))
+                local sess, err = sock:sslhandshake(nil, "www.google.com", true)
+                if not sess then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
 
-            local req = "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n"
-            local bytes, err = sock:send(req)
-            if not bytes then
-                ngx.say("failed to send stream request: ", err)
-                return
-            end
+                ngx.say("ssl handshake: ", type(sess))
 
-            ngx.say("sent stream request: ", bytes, " bytes.")
+                local req = "GET / HTTP/1.1\\r\\nHost: www.google.com\\r\\nConnection: close\\r\\n\\r\\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send http request: ", err)
+                    return
+                end
 
-            local line, err = sock:receive()
-            if not line then
-                ngx.say("failed to recieve response status line: ", err)
-                return
-            end
+                ngx.say("sent http request: ", bytes, " bytes.")
 
-            ngx.say("received: ", line)
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
 
-            local ok, err = sock:close()
-            ngx.say("close: ", ok, " ", err)
-        end  -- do
-        collectgarbage()
-    }
+                ngx.say("received: ", line)
+
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        ';
 
 --- config
     server_tokens off;
@@ -876,7 +877,7 @@ $::EquifaxRootCertificate"
 --- stream_response_like chop
 \Aconnected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
+sent http request: 59 bytes.
 received: HTTP/1.1 (?:200 OK|302 Found)
 close: 1 nil
 \z
@@ -897,7 +898,7 @@ SSL reused session
 
 === TEST 12: www.google.com  (SSL verify enabled and no corresponding trusted certificates)
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER ipv6=off;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 3;
 
@@ -932,7 +933,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(sess))
 
-            local req = "GET / HTTP/1.1\r\nHost: www.google.com\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\\r\\nHost: www.google.com\\r\\nConnection: close\\r\\n\\r\\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -960,7 +961,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
@@ -978,9 +979,9 @@ SSL reused session
 
 
 
-=== TEST 13: iscribblet.org: passing SSL verify with multiple certificates
+=== TEST 13: openresty.org: passing SSL verify with multiple certificates
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
 
@@ -989,7 +990,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -997,7 +998,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org", true)
+            local session, err = sock:sslhandshake(nil, "openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -1005,7 +1006,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -1034,13 +1035,13 @@ SSL reused session
 --- user_files eval
 ">>> trusted.crt
 $::EquifaxRootCertificate
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -1051,7 +1052,7 @@ lua ssl free session: ([0-9A-F]+):1
 $/
 
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -1062,14 +1063,14 @@ SSL reused session
 
 === TEST 14: default cipher
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -1077,7 +1078,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org")
+            local session, err = sock:sslhandshake(nil, "openresty.org")
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -1085,7 +1086,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -1111,8 +1112,8 @@ SSL reused session
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -1122,8 +1123,8 @@ qr/^lua ssl save session: ([0-9A-F]+):2
 lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1.2, cipher: "ECDHE-RSA-RC4-SHA SSLv3
+lua ssl server name: "openresty.org"
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-GCM-SHA384 TLSv1.2
 --- no_error_log
 SSL reused session
 [error]
@@ -1134,15 +1135,15 @@ SSL reused session
 
 === TEST 15: explicit cipher configuration
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
-    lua_ssl_ciphers RC4-SHA;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
+    lua_ssl_ciphers ECDHE-RSA-AES256-SHA;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -1150,7 +1151,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org")
+            local session, err = sock:sslhandshake(nil, "openresty.org")
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -1158,7 +1159,7 @@ SSL reused session
 
             ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -1184,8 +1185,8 @@ SSL reused session
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -1195,8 +1196,8 @@ qr/^lua ssl save session: ([0-9A-F]+):2
 lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1.2, cipher: "RC4-SHA SSLv3
+lua ssl server name: "openresty.org"
+SSL: TLSv1.2, cipher: "ECDHE-RSA-AES256-SHA
 --- no_error_log
 SSL reused session
 [error]
@@ -1207,52 +1208,52 @@ SSL reused session
 
 === TEST 16: explicit ssl protocol configuration
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_protocols TLSv1;
 
-    content_by_lua_block {
-        local sock = ngx.socket.tcp()
-        sock:settimeout(2000)
+    content_by_lua '
+            local sock = ngx.socket.tcp()
+            sock:settimeout(2000)
 
-        do
-            local ok, err = sock:connect("iscribblet.org", 443)
-            if not ok then
-                ngx.say("failed to connect: ", err)
-                return
-            end
+            do
+                local ok, err = sock:connect("openresty.org", 443)
+                if not ok then
+                    ngx.say("failed to connect: ", err)
+                    return
+                end
 
-            ngx.say("connected: ", ok)
+                ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org")
-            if not session then
-                ngx.say("failed to do SSL handshake: ", err)
-                return
-            end
+                local session, err = sock:sslhandshake(nil, "openresty.org")
+                if not session then
+                    ngx.say("failed to do SSL handshake: ", err)
+                    return
+                end
 
-            ngx.say("ssl handshake: ", type(session))
+                ngx.say("ssl handshake: ", type(session))
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
-            local bytes, err = sock:send(req)
-            if not bytes then
-                ngx.say("failed to send stream request: ", err)
-                return
-            end
+                local req = "GET / HTTP/1.1\\r\\nHost: openresty.org\\r\\nConnection: close\\r\\n\\r\\n"
+                local bytes, err = sock:send(req)
+                if not bytes then
+                    ngx.say("failed to send stream request: ", err)
+                    return
+                end
 
-            ngx.say("sent stream request: ", bytes, " bytes.")
+                ngx.say("sent stream request: ", bytes, " bytes.")
 
-            local line, err = sock:receive()
-            if not line then
-                ngx.say("failed to recieve response status line: ", err)
-                return
-            end
+                local line, err = sock:receive()
+                if not line then
+                    ngx.say("failed to receive response status line: ", err)
+                    return
+                end
 
-            ngx.say("received: ", line)
+                ngx.say("received: ", line)
 
-            local ok, err = sock:close()
-            ngx.say("close: ", ok, " ", err)
-        end  -- do
-        collectgarbage()
-    }
+                local ok, err = sock:close()
+                ngx.say("close: ", ok, " ", err)
+            end  -- do
+            collectgarbage()
+        ';
 
 --- config
     server_tokens off;
@@ -1260,8 +1261,8 @@ SSL reused session
 --- stream_response
 connected: 1
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -1271,8 +1272,8 @@ qr/^lua ssl save session: ([0-9A-F]+):2
 lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
-SSL: TLSv1, cipher: "ECDHE-RSA-RC4-SHA SSLv3
+lua ssl server name: "openresty.org"
+SSL: TLSv1, cipher: "ECDHE-RSA-AES256-SHA
 --- no_error_log
 SSL reused session
 [error]
@@ -1283,7 +1284,7 @@ SSL reused session
 
 === TEST 17: unsupported ssl protocol
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_protocols SSLv2;
     lua_socket_log_errors off;
 
@@ -1292,7 +1293,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -1300,14 +1301,14 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org")
+            local session, err = sock:sslhandshake(nil, "openresty.org")
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
             else
                 ngx.say("ssl handshake: ", type(session))
             end
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -1344,7 +1345,7 @@ failed to send stream request: closed
 --- error_log eval
 [
 qr/\[crit\] .*?SSL_do_handshake\(\) failed .*?unsupported protocol/,
-'lua ssl server name: "iscribblet.org"',
+'lua ssl server name: "openresty.org"',
 ]
 --- no_error_log
 SSL reused session
@@ -1354,9 +1355,9 @@ SSL reused session
 
 
 
-=== TEST 18: iscribblet.org: passing SSL verify: keepalive (reuse the ssl session)
+=== TEST 18: openresty.org: passing SSL verify: keepalive (reuse the ssl session)
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
 
@@ -1368,7 +1369,7 @@ SSL reused session
 
         local session
         for i = 1, 3 do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -1376,7 +1377,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            session, err = sock:sslhandshake(session, "iscribblet.org", true)
+            session, err = sock:sslhandshake(session, "openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -1397,7 +1398,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
@@ -1427,9 +1428,9 @@ SSL reused session
 
 
 
-=== TEST 19: iscribblet.org: passing SSL verify: keepalive (no reusing the ssl session)
+=== TEST 19: openresty.org: passing SSL verify: keepalive (no reusing the ssl session)
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
 
@@ -1442,7 +1443,7 @@ SSL reused session
         local sessions = {}
 
         for i = 1, 3 do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -1450,7 +1451,7 @@ SSL reused session
 
             ngx.say("connected: ", ok)
 
-            local session, err = sock:sslhandshake(nil, "iscribblet.org", true)
+            local session, err = sock:sslhandshake(nil, "openresty.org", true)
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -1471,7 +1472,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 connected: 1
@@ -1507,7 +1508,7 @@ SSL reused session
 
 === TEST 20: downstream cosockets do not support ssl handshake
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/trusted.crt;
     lua_ssl_verify_depth 2;
 
@@ -1523,7 +1524,7 @@ SSL reused session
 
 --- user_files eval
 ">>> trusted.crt
-$::StartComRootCertificate"
+$::ComodoRootCertificate"
 
 --- stream_response
 --- log_level: debug
@@ -1556,7 +1557,7 @@ attempt to call method 'sslhandshake' (a nil value)
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         do
@@ -1650,7 +1651,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/test.crt;
 
 
@@ -1745,7 +1746,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         do
@@ -1832,7 +1833,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_crl ../html/test.crl;
     lua_ssl_trusted_certificate ../html/test.crt;
     lua_socket_log_errors off;
@@ -1910,7 +1911,7 @@ SSL reused session
 
 === TEST 25: multiple handshake calls
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
@@ -1918,7 +1919,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -1927,7 +1928,7 @@ SSL reused session
             ngx.say("connected: ", ok)
 
             for i = 1, 2 do
-                local session, err = sock:sslhandshake(nil, "iscribblet.org")
+                local session, err = sock:sslhandshake(nil, "openresty.org")
                 if not session then
                     ngx.say("failed to do SSL handshake: ", err)
                     return
@@ -1936,7 +1937,7 @@ SSL reused session
                 ngx.say("ssl handshake: ", type(session))
             end
 
-            local req = "GET / HTTP/1.1\r\nHost: iscribblet.org\r\nConnection: close\r\n\r\n"
+            local req = "GET / HTTP/1.1\r\nHost: openresty.org\r\nConnection: close\r\n\r\n"
             local bytes, err = sock:send(req)
             if not bytes then
                 ngx.say("failed to send stream request: ", err)
@@ -1966,8 +1967,8 @@ SSL reused session
 connected: 1
 ssl handshake: userdata
 ssl handshake: userdata
-sent stream request: 59 bytes.
-received: HTTP/1.1 200 OK
+sent stream request: 58 bytes.
+received: HTTP/1.1 302 Moved Temporarily
 close: 1 nil
 
 --- log_level: debug
@@ -1979,7 +1980,7 @@ lua ssl free session: ([0-9A-F]+):2
 lua ssl free session: ([0-9A-F]+):1
 $/
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -1990,7 +1991,7 @@ SSL reused session
 
 === TEST 26: handshake timed out
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
@@ -1998,7 +1999,7 @@ SSL reused session
         sock:settimeout(2000)
 
         do
-            local ok, err = sock:connect("iscribblet.org", 443)
+            local ok, err = sock:connect("openresty.org", 443)
             if not ok then
                 ngx.say("failed to connect: ", err)
                 return
@@ -2007,7 +2008,7 @@ SSL reused session
             ngx.say("connected: ", ok)
 
             sock:settimeout(1);  -- should timeout immediately
-            local session, err = sock:sslhandshake(nil, "iscribblet.org")
+            local session, err = sock:sslhandshake(nil, "openresty.org")
             if not session then
                 ngx.say("failed to do SSL handshake: ", err)
                 return
@@ -2029,7 +2030,7 @@ failed to do SSL handshake: timeout
 --- grep_error_log eval: qr/lua ssl (?:set|save|free) session: [0-9A-F]+:\d+/
 --- grep_error_log_out
 --- error_log
-lua ssl server name: "iscribblet.org"
+lua ssl server name: "openresty.org"
 --- no_error_log
 SSL reused session
 [error]
@@ -2057,7 +2058,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         do
@@ -2127,7 +2128,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         do
@@ -2196,7 +2197,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
 
     content_by_lua_block {
         local sock = ngx.socket.tcp()
@@ -2272,7 +2273,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     lua_ssl_trusted_certificate ../html/test.crt;
 
 
@@ -2367,7 +2368,7 @@ SSL reused session
         }
     }
 --- stream_server_config
-    lua_resolver $TEST_NGINX_RESOLVER;
+    resolver $TEST_NGINX_RESOLVER ipv6=off;
     #lua_ssl_trusted_certificate ../html/test.crt;
 
 
