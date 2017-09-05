@@ -36,6 +36,8 @@ Nginx 1.11.5+ .
 
 Experimental, and maybe upgrade to lastest original repo in the future.
 
+NOTICE : openresty/stream-lua lastest source is in the branch `openresty`.
+
 Changes
 =======
 
