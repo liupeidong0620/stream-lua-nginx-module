@@ -33,7 +33,7 @@ env:
     - NGX_BUILD_JOBS=$JOBS
     - TEST_NGINX_SLEEP=0.006
   matrix:
-    - NGINX_VERSION=1.13.3
+    - NGINX_VERSION=1.13.4
 
 services:
  - memcache
@@ -41,7 +41,7 @@ services:
 
 install:
   - if [ ! -f download-cache/pcre-$PCRE_VER.tar.gz ]; then wget -P download-cache/ http://ftp.cs.stanford.edu/pub/exim/pcre/pcre-$PCRE_VER.tar.gz; fi
-  - git clone https://github.com/openresty/nginx-devel-utils.git
+  - git clone https://github.com/openresty/openresty-devel-utils.git
   - git clone https://github.com/openresty/lua-cjson.git
   - git clone -b 1.13.x https://github.com/openresty/openresty.git ../openresty
   - git clone https://github.com/openresty/no-pool-nginx.git ../no-pool-nginx
@@ -67,7 +67,7 @@ script:
   - cd ../test-nginx && sudo cpanm . && cd ..
   - cd lua-cjson/ && make -j$JOBS && sudo make install && cd ..
   - cd mockeagain/ && make CC=$CC -j$JOBS && cd ..
-  - export PATH=$PWD/work/nginx/sbin:$PWD/nginx-devel-utils:$PATH
+  - export PATH=$PWD/work/nginx/sbin:$PWD/openresty-devel-utils:$PATH
   - export NGX_BUILD_CC=$CC
   - sh util/build.sh $NGINX_VERSION > build.log 2>&1 || (cat build.log && exit 1)
   - nginx -V

@@ -123,6 +123,8 @@
 #define NGX_STREAM_LUA_CONTEXT_LOG                                  0x0002
 #define NGX_STREAM_LUA_CONTEXT_TIMER                                0x0004
 #define NGX_STREAM_LUA_CONTEXT_INIT_WORKER                          0x0008
+#define NGX_STREAM_LUA_CONTEXT_BALANCER                             0x0010
+#define NGX_STREAM_LUA_CONTEXT_PREREAD                              0x0020
 
 
 
@@ -134,9 +136,12 @@
 
 typedef struct ngx_stream_lua_main_conf_s  ngx_stream_lua_main_conf_t;
 
+typedef struct ngx_stream_lua_srv_conf_s ngx_stream_lua_srv_conf_t;
 
 
 
+typedef struct ngx_stream_lua_balancer_peer_data_s
+    ngx_stream_lua_balancer_peer_data_t;
 
 
 typedef struct ngx_stream_lua_sema_mm_s  ngx_stream_lua_sema_mm_t;
@@ -144,7 +149,8 @@ typedef struct ngx_stream_lua_sema_mm_s  ngx_stream_lua_sema_mm_t;
 
 typedef ngx_int_t (*ngx_stream_lua_main_conf_handler_pt)(ngx_log_t *log,
     ngx_stream_lua_main_conf_t *lmcf, lua_State *L);
-
+typedef ngx_int_t (*ngx_stream_lua_srv_conf_handler_pt)(ngx_stream_lua_request_t *r,
+    ngx_stream_lua_srv_conf_t *lscf, lua_State *L);
 
 
 typedef struct {
@@ -195,7 +201,11 @@ struct ngx_stream_lua_main_conf_s {
     ngx_stream_lua_main_conf_handler_pt    init_worker_handler;
     ngx_str_t                            init_worker_src;
 
-
+    ngx_stream_lua_balancer_peer_data_t    *balancer_peer_data;
+    /* balancer_by_lua does not support yielding and
+     * there cannot be any conflicts among concurrent requests,
+     * thus it is safe to store the peer data in the main conf.
+     */
 
     ngx_uint_t                      shm_zones_inited;
 
@@ -207,8 +217,11 @@ struct ngx_stream_lua_main_conf_s {
 
 
 
+    unsigned             requires_preread:1;
 
+    unsigned             requires_log:1;
     unsigned             requires_shm:1;
+
 
 };
 
@@ -216,7 +229,9 @@ struct ngx_stream_lua_main_conf_s {
 
 
 
-typedef struct {
+
+struct ngx_stream_lua_srv_conf_s {
+
 #if (NGX_STREAM_SSL)
     ngx_ssl_t              *ssl;  /* shared by SSL cosockets */
     ngx_uint_t              ssl_protocols;
@@ -229,10 +244,17 @@ typedef struct {
     ngx_flag_t              enable_code_cache; /* whether to enable
                                                   code cache */
 
-
+    ngx_stream_lua_handler_pt     preread_handler;
 
     ngx_stream_lua_handler_pt     content_handler;
+    ngx_stream_lua_handler_pt     log_handler;
 
+    u_char                      *preread_chunkname;
+    ngx_stream_complex_value_t   preread_src;     /*  access_by_lua
+                                                inline script/script
+                                                file path */
+
+    u_char                      *preread_src_key; /* cached key for access_src */
 
 
     u_char                  *content_chunkname;
@@ -241,6 +263,12 @@ typedef struct {
                                                 file path */
 
     u_char                 *content_src_key; /* cached key for content_src */
+
+    u_char                                 *log_chunkname;
+    ngx_stream_complex_value_t     log_src;     /* log_by_lua inline script/script
+                                                 file path */
+
+    u_char                                 *log_src_key; /* cached key for log_src */
 
 
 
@@ -260,9 +288,15 @@ typedef struct {
     ngx_flag_t                       check_client_abort;
 
 
+    struct {
+        ngx_str_t           src;
+        u_char             *src_key;
+
+        ngx_stream_lua_srv_conf_handler_pt  handler;
+    } balancer;
 
 
-} ngx_stream_lua_srv_conf_t;
+};
 
 typedef ngx_stream_lua_srv_conf_t ngx_stream_lua_loc_conf_t;
 
@@ -436,8 +470,9 @@ typedef struct ngx_stream_lua_ctx_s {
     unsigned         headers_set:1; /* whether the user has set custom
                                        response headers */
 
-    unsigned         entered_rewrite_phase:1;
-    unsigned         entered_access_phase:1;
+
+    unsigned         entered_preread_phase:1;
+
     unsigned         entered_content_phase:1;
 
     unsigned         buffering:1; /* HTTP 1.0 response body buffering flag */
