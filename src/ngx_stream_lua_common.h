@@ -10,7 +10,9 @@
 
 
 
+#ifndef NGX_LUA_NO_FFI_API
 #define NGX_LUA_NO_FFI_API
+#endif
 
 
 
@@ -161,6 +163,7 @@ typedef struct {
 
 struct ngx_stream_lua_main_conf_s {
     lua_State           *lua;
+    ngx_pool_cleanup_t  *vm_cleanup;
 
     ngx_str_t            lua_path;
     ngx_str_t            lua_cpath;

@@ -225,7 +225,7 @@ ngx_stream_lua_socket_udp_setpeername(lua_State *L)
     if (n == 3) {
         port = luaL_checkinteger(L, 3);
 
-        if (port < 0 || port > 65536) {
+        if (port < 0 || port > 65535) {
             lua_pushnil(L);
             lua_pushfstring(L, "bad port number: %d", port);
             return 2;
@@ -596,7 +596,7 @@ ngx_stream_lua_socket_resolve_handler(ngx_resolver_ctx_t *ctx)
 #else
     /* for nginx older than 1.5.8 */
 
-    len = NGX_INET_ADDRSTRLEN + sizeof(":65536") - 1;
+    len = NGX_INET_ADDRSTRLEN + sizeof(":65535") - 1;
 
     p = ngx_pnalloc(r->pool, len + sizeof(struct sockaddr_in));
     if (p == NULL) {
@@ -1315,18 +1315,19 @@ ngx_stream_lua_socket_udp_cleanup(void *data)
 static void
 ngx_stream_lua_socket_udp_handler(ngx_event_t *ev)
 {
-    ngx_connection_t                *c;
-    ngx_stream_lua_request_t              *r;
-
-
-
+    ngx_stream_lua_request_t                                 *r;
     ngx_stream_lua_socket_udp_upstream_t  *u;
+    ngx_connection_t                               *c;
+
 
     c = ev->data;
     u = c->data;
     r = u->request;
     c = r->connection;
 
+
+    ngx_log_debug1(NGX_LOG_DEBUG_STREAM, c->log, 0,
+                   "lua udp socket handler: wev %d", (int) ev->write);
 
 
     u->read_event_handler(r, u);
